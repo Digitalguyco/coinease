@@ -154,7 +154,7 @@ const Navbar = () => {
             <li>
               <button 
                 onClick={() => scrollToSection('hero')} 
-                className="relative  hover:text-[#5B46F6] transition-colors duration-300 
+                className="relative text-black dark:text-white hover:text-[#5B46F6] transition-colors duration-300 
                   after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-[#5B46F6] 
                   after:transition-all after:duration-300 hover:after:w-full cursor-pointer"
               >
@@ -164,7 +164,7 @@ const Navbar = () => {
             <li>
               <button 
                 onClick={() => scrollToSection('pricing')} 
-                className="relative  hover:text-[#5B46F6] transition-colors duration-300 
+                className="relative text-black dark:text-white hover:text-[#5B46F6] transition-colors duration-300 
                   after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-[#5B46F6] 
                   after:transition-all after:duration-300 hover:after:w-full cursor-pointer"
               >
@@ -174,7 +174,7 @@ const Navbar = () => {
             <li>
               <button 
                 onClick={() => scrollToSection('about')} 
-                className="relative  hover:text-[#5B46F6] transition-colors duration-300 
+                className="relative text-black dark:text-white hover:text-[#5B46F6] transition-colors duration-300 
                   after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-[#5B46F6] 
                   after:transition-all after:duration-300 hover:after:w-full cursor-pointer"
               >
@@ -184,7 +184,7 @@ const Navbar = () => {
             <li>
               <button 
                 onClick={() => scrollToSection('contact')} 
-                className="relative  hover:text-[#5B46F6] transition-colors duration-300 
+                className="relative text-black dark:text-white hover:text-[#5B46F6] transition-colors duration-300 
                   after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-[#5B46F6] 
                   after:transition-all after:duration-300 hover:after:w-full cursor-pointer"
               >
