@@ -1,8 +1,11 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import React, { useState, useEffect, Suspense } from "react";
 import Drawer from "../components/Dashboard/Drawer";
 import Header from "../components/Dashboard/Header";
 import LoadingSpinner from "../components/Dashboard/LoadingSpinner";
+import { Sparklines, SparklinesLine } from 'react-sparklines';
+import Link from "next/link";
 
 // Use React.lazy to dynamically import the TradingViewWidget
 const TradingViewWidget = React.lazy(() => import("../components/Dashboard/TradingView"));
@@ -10,11 +13,104 @@ const TradingViewWidget = React.lazy(() => import("../components/Dashboard/Tradi
 export default function Dashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [theme, setTheme] = useState("light");
-//   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [activePeriod, setActivePeriod] = useState("1M");
+  
+  // State for live data
+  const [portfolioValue, setPortfolioValue] = useState(200000);
+  const [cryptoData, setCryptoData] = useState({
+    BTC: { price: 0, change: 0, holdings: 0.85, sparkline: [] },
+    ETH: { price: 0, change: 0, holdings: 23.5, sparkline: [] },
+    LTC: { price: 0, change: 0, holdings: 135.7, sparkline: [] },
+  });
+  const [marketTrends, setMarketTrends] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
+
+  // Fetch crypto price data
+  useEffect(() => {
+    const fetchCryptoData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,litecoin&order=market_cap_desc&sparkline=true'
+        );
+        
+        if (!response.ok) throw new Error('Failed to fetch crypto data');
+        
+        const data = await response.json();
+        
+        const newCryptoData = { ...cryptoData };
+        let totalValue = 0;
+        
+        data.forEach(coin => {
+          const symbol = coin.symbol.toUpperCase();
+          if (cryptoData[symbol]) {
+            newCryptoData[symbol] = {
+              price: coin.current_price,
+              change: coin.price_change_percentage_24h,
+              holdings: cryptoData[symbol].holdings,
+              sparkline: coin.sparkline_in_7d?.price || []
+            };
+            
+            // Calculate portfolio value
+            totalValue += coin.current_price * cryptoData[symbol].holdings;
+          }
+        });
+        
+        setCryptoData(newCryptoData);
+        setPortfolioValue(Math.round(totalValue));
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching crypto data:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchCryptoData();
+    const interval = setInterval(fetchCryptoData, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch market trends
+  useEffect(() => {
+    const fetchMarketTrends = async () => {
+      try {
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=5'
+        );
+        
+        if (!response.ok) throw new Error('Failed to fetch market data');
+        
+        const data = await response.json();
+        
+        const formattedData = data.map(coin => ({
+          name: coin.name,
+          symbol: coin.symbol.toUpperCase(),
+          price: coin.current_price,
+          priceFormatted: `$${coin.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          change: coin.price_change_percentage_24h,
+          changeFormatted: `${coin.price_change_percentage_24h.toFixed(1)}%`,
+          cap: `$${(coin.market_cap / 1e9).toFixed(1)}B`,
+          trending: coin.price_change_percentage_24h >= 0 ? "up" : "down",
+          image: coin.image
+        }));
+        
+        setMarketTrends(formattedData);
+      } catch (error) {
+        console.error("Error fetching market trends:", error);
+      }
+    };
+
+    fetchMarketTrends();
+    const interval = setInterval(fetchMarketTrends, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -42,10 +138,9 @@ export default function Dashboard() {
     };
   }, []);
 
-
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
         {/* Drawer Navigation */}
         <Drawer isOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
 
@@ -53,123 +148,335 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col w-full overflow-hidden">
           <Header isOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
 
-          <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden">
-            {/* Top row with balance and crypto widgets */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-              {/* Balance Card */}
-              <div className="flex flex-col justify-between h-auto gap-3 sm:gap-4 md:gap-6 border border-gray-500 p-3 sm:p-4 rounded-xl">
-                <div className="flex items-center gap-2 md:gap-4">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 20 18"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10"
+
+          <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-900">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Total Portfolio Value</div>
+                  {isLoading ? (
+                    <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                  ) : (
+                    <div className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                      +{((portfolioValue / (portfolioValue - 2398) - 1) * 100).toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+                {isLoading ? (
+                  <div className="w-32 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                ) : (
+                  <div className="flex items-baseline">
+                    <span className="text-2xl font-bold">${portfolioValue.toLocaleString()}</span>
+                    <span className="ml-2 text-sm text-green-600 dark:text-green-400">+$2,398 today</span>
+                  </div>
+                )}
+                <button className="mt-3 w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                  Add Funds
+                </button>
+              </div>
+
+              {/* Dynamic crypto cards with real-time data */}
+              {['BTC', 'ETH', 'LTC'].map((symbol, index) => {
+                const coin = {
+                  BTC: { name: 'Bitcoin' },
+                  ETH: { name: 'Ethereum' },
+                  LTC: { name: 'Litecoin' }
+                }[symbol];
+                
+                const data = cryptoData[symbol];
+                const isPositive = data.change >= 0;
+                
+                return (
+                  <div 
+                    key={symbol} 
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4"
                   >
-                    <path
-                      id="Vector"
-                      d="M18 4V2C18 0.897 17.103 0 16 0H3C1.346 0 0 1.346 0 3V15C0 17.201 1.794 18 3 18H18C19.103 18 20 17.103 20 16V6C20 4.897 19.103 4 18 4ZM16 13H14V9H16V13ZM3 4C2.74252 3.98848 2.49941 3.87809 2.32128 3.69182C2.14315 3.50554 2.04373 3.25774 2.04373 3C2.04373 2.74226 2.14315 2.49446 2.32128 2.30818C2.49941 2.12191 2.74252 2.01152 3 2H16V4H3Z"
-                      fill="#5B46F6"
-                    />
-                  </svg>
-                  <div className="text-base sm:text-lg font-semibold font-inter leading-tight md:leading-7">
-                    Balance
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{coin.name}</div>
+                      {isLoading ? (
+                        <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                      ) : (
+                        <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          isPositive
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                            : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                        }`}>
+                          {isPositive ? "+" : ""}{data.change.toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
+                    {isLoading ? (
+                      <>
+                        <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
+                        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-baseline">
+                          <span className="text-2xl font-bold">${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{data.holdings} {symbol}</span>
+                        </div>
+                        <div className="mt-3 h-10">
+                          {data.sparkline.length > 0 ? (
+                            <Sparklines data={data.sparkline.slice(-100)} height={15} width={100}>
+                              <SparklinesLine color={theme === "dark" ? "#818cf8" : "#4f46e5"} />
+                            </Sparklines>
+                          ) : (
+                            <div className="h-10 flex items-center justify-center text-sm text-gray-400">
+                              No chart data available
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="text-xs sm:text-sm font-inter bg-[#5B46F6] text-white px-2 sm:px-4 self-end py-1 sm:py-2 rounded-xl sm:rounded-2xl whitespace-nowrap">
-                    <span className="mr-2">+</span>Add Funds
+                );
+              })}
+            </div>
+
+            {/* Portfolio Distribution */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Charts Section */}
+              <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-lg">Market Chart</h3>
+                  <div className="flex space-x-2">
+                    {["1D", "1W", "1M", "3M", "1Y", "ALL"].map((period) => (
+                      <button
+                        key={period}
+                        className={`px-2 py-1 text-xs font-medium rounded ${
+                          period === activePeriod 
+                            ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" 
+                            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
+                        onClick={() => setActivePeriod(period)}
+                      >
+                        {period}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="text-xl sm:text-2xl md:text-3xl font-semibold font-inter leading-tight md:leading-7">
-                  $200,000
-                </div>
-                <div className="flex flex-wrap justify-between items-center gap-1 sm:gap-2">
-                  <div className="text-grey-500 text-xs sm:text-sm font-inter">Daily</div>
-                  <div className="text-green-600 text-xs sm:text-sm font-semibold font-inter">+$2398</div>
-                  <div className="text-green-600 text-xs sm:text-sm font-semibold font-inter bg-black/60 rounded-full px-2 py-1">
-                    +14.9%
-                  </div>
+                <div className="h-[400px]">
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <TradingViewWidget  />
+                  </Suspense>
                 </div>
               </div>
 
-              {/* Crypto Widgets - using grid cells */}
-              <div>
-                <div
-                  className="livecoinwatch-widget-1"
-                  lcw-coin="ETH"
-                  lcw-base="USD"
-                  lcw-secondary="BTC"
-                  lcw-period="d"
-                  lcw-color-tx="#0693e3"
-                  lcw-color-pr="#58c7c5"
-                  lcw-color-bg={theme === "dark" ? "#1f2434" : "white"}
-                  lcw-border-w="1"
-                ></div>
-              </div>
-              <div>
-                <div
-                  className="livecoinwatch-widget-1"
-                  lcw-coin="BTC"
-                  lcw-base="USD"
-                  lcw-secondary="BTC"
-                  lcw-period="d"
-                  lcw-color-tx="#0693e3"
-                  lcw-color-pr="#58c7c5"
-                  lcw-color-bg={theme === "dark" ? "#1f2434" : "white"}
-                  lcw-border-w="1"
-                ></div>
-              </div>
-              <div>
-                <div
-                  className="livecoinwatch-widget-1"
-                  lcw-coin="LTC"
-                  lcw-base="USD"
-                  lcw-secondary="BTC"
-                  lcw-period="d"
-                  lcw-color-tx="#0693e3"
-                  lcw-color-pr="#58c7c5"
-                  lcw-color-bg={theme === "dark" ? "#1f2434" : "white"}
-                  lcw-border-w="1"
-                ></div>
+              {/* Portfolio & Plans */}
+              <div className="space-y-6">
+                {/* Portfolio Distribution Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                  <h3 className="font-bold text-lg mb-4">Portfolio Distribution</h3>
+                  
+                  {isLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="space-y-2">
+                          <div className="flex justify-between">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-8 animate-pulse"></div>
+                          </div>
+                          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Calculate portfolio distribution based on real prices */}
+                      {(() => {
+                        const totalValue = portfolioValue;
+                        const btcValue = cryptoData.BTC.price * cryptoData.BTC.holdings;
+                        const ethValue = cryptoData.ETH.price * cryptoData.ETH.holdings;
+                        const ltcValue = cryptoData.LTC.price * cryptoData.LTC.holdings;
+                        
+                        const btcPercent = Math.round((btcValue / totalValue) * 100);
+                        const ethPercent = Math.round((ethValue / totalValue) * 100);
+                        const ltcPercent = Math.round((ltcValue / totalValue) * 100);
+                        const otherPercent = 100 - btcPercent - ethPercent - ltcPercent;
+                        
+                        return (
+                          <>
+                            <div className="flex items-center mb-3">
+                              <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>
+                              <div className="flex-1 flex justify-between">
+                                <span className="text-sm">Bitcoin (BTC)</span>
+                                <span className="text-sm font-medium">{btcPercent}%</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                              <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${btcPercent}%` }}></div>
+                            </div>
+                            
+                            <div className="flex items-center mb-3">
+                              <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                              <div className="flex-1 flex justify-between">
+                                <span className="text-sm">Ethereum (ETH)</span>
+                                <span className="text-sm font-medium">{ethPercent}%</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                              <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${ethPercent}%` }}></div>
+                            </div>
+                            
+                            <div className="flex items-center mb-3">
+                              <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                              <div className="flex-1 flex justify-between">
+                                <span className="text-sm">Litecoin (LTC)</span>
+                                <span className="text-sm font-medium">{ltcPercent}%</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                              <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${ltcPercent}%` }}></div>
+                            </div>
+                            
+                            <div className="flex items-center mb-3">
+                              <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                              <div className="flex-1 flex justify-between">
+                                <span className="text-sm">Others</span>
+                                <span className="text-sm font-medium">{otherPercent}%</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${otherPercent}%` }}></div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
+
+                {/* Investment Plans */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg">Top Plans</h3>
+                    <Link href={'/dashboard/invest'}  className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
+                      View All
+                    </Link>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      { name: "Silver Plan", roi: "4% daily", min: "$100" },
+                      { name: "Gold Plan", roi: "5% daily", min: "$500" },
+                      { name: "Platinum Plan", roi: "7% daily", min: "$1,000" }
+                    ].map((plan, index) => (
+                      <div 
+                        key={index} 
+                        className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors duration-200"
+                      >
+                        <div>
+                          <div className="text-sm font-medium">{plan.name}</div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{plan.roi}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Min: {plan.min}</span>
+                          </div>
+                        </div>
+                        <Link href={'/dashboard/invest'}  className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
+                          Invest
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Bottom section with chart and investment plans */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* TradingView Chart */}
-              <div className="lg:col-span-2">
-                <Suspense fallback={<LoadingSpinner />}>
-                  <TradingViewWidget />
-                </Suspense>
-              </div>
-
-              {/* Investment Plans */}
-              <div className="flex flex-col justify-between gap-3 sm:gap-4 md:gap-6 border border-grey-500 p-3 sm:p-4 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <div className="text-base sm:text-lg font-bold font-inter leading-tight md:leading-7">
-                    Top Plans
-                  </div>
-                  <div className="text-xs sm:text-sm font-inter bg-[#5B46F6] text-white px-2 sm:px-4 py-1 sm:py-2 rounded-xl sm:rounded-2xl">
-                    View All
-                  </div>
+            {/* Market Trends - Live Data */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-lg">Market Trends</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {marketTrends.length > 0 ? "Live Data" : "Loading..."}
+                  </span>
+                  <div className={`w-2 h-2 rounded-full ${marketTrends.length > 0 ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}></div>
+               
                 </div>
-
-                {/* Investment Plan Cards */}
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <div key={item} className="flex justify-between items-center p-2 sm:p-4 border border-[#5B46F6] rounded-xl">
-                    <div>
-                      <div className="text-xs sm:text-sm font-inter leading-tight md:leading-7">
-                        Starter plan
-                      </div>
-                      <div className="text-sm sm:text-base md:text-lg font-semibold font-inter leading-tight md:leading-7">
-                        4% daily
-                      </div>
-                    </div>
-                    <div className="text-xs sm:text-sm font-inter bg-[#5B46F6] text-white px-2 sm:px-4 py-1 sm:py-2 rounded-xl sm:rounded-2xl whitespace-nowrap">
-                      Invest
-                    </div>
-                  </div>
-                ))}
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
+                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
+                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">24h Change</th>
+                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Market Cap</th>
+                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {marketTrends.length > 0 ? (
+                      marketTrends.map((coin, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors duration-150">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 flex-shrink-0 mr-3 rounded-full overflow-hidden">
+                                {coin.image ? (
+                                  <img src={coin.image} alt={coin.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                    {coin.symbol.charAt(0)}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-medium">{coin.name}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{coin.symbol}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap font-medium">{coin.priceFormatted}</td>
+                          <td className={`px-4 py-3 whitespace-nowrap font-medium ${
+                            coin.trending === "up" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                          }`}>
+                            {coin.changeFormatted}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">{coin.cap}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex space-x-2">
+                              <button className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded">Buy</button>
+                              <button className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">Trade</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      // Loading state for market trends
+                      Array(5).fill(0).map((_, index) => (
+                        <tr key={index} className="animate-pulse">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full mr-3"></div>
+                              <div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-1"></div>
+                                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex space-x-2">
+                              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
+                              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </main>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 export default function Header({
   toggleDrawer,
@@ -6,8 +6,36 @@ export default function Header({
   isOpen?: boolean;
   toggleDrawer: () => void;
 }) {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<SVGSVGElement>(null);
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        notificationRef.current && 
+        !notificationRef.current.contains(event.target as Node) &&
+        bellRef.current &&
+        !bellRef.current.contains(event.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Sample notifications - can be replaced with real data later
+  const notifications: unknown[] = [
+    // Empty for "no notifications" state
+  ];
+
   return (
-    <header className="flex items-center justify-between shadow p-2 sm:p-4 sticky top-0 dark:bg-black bg-white">
+    <header className="flex items-center justify-between shadow p-2 sm:p-4 sticky top-0 dark:bg-black bg-white z-20">
       <button onClick={toggleDrawer} className="text-blue-500">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -25,29 +53,99 @@ export default function Header({
         </svg>
       </button>
       <div className="flex items-center space-x-2 sm:space-x-6 md:space-x-10">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 27 28"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="hidden sm:block"
-        >
-          <g id="Group 237544">
-            <path
-              id="Vector"
-              d="M22.2069 15.0486V12.5517H20.2759V15.4483C20.2759 15.7043 20.3777 15.9499 20.5588 16.1309L23.1724 18.7446V20.2759H1.93103V18.7446L4.54469 16.1309C4.72577 15.9499 4.82753 15.7043 4.82759 15.4483V11.5862C4.8249 10.2295 5.18029 8.89602 5.85788 7.72058C6.53546 6.54514 7.51124 5.56933 8.68666 4.8917C9.86207 4.21408 11.1955 3.85863 12.5522 3.86128C13.909 3.86392 15.241 4.22456 16.4138 4.90676V2.74883C15.4947 2.34188 14.5172 2.08251 13.5172 1.98028V0H11.5862V1.97931C9.2058 2.22159 6.99977 3.3379 5.3947 5.1124C3.78963 6.88689 2.89955 9.1935 2.89655 11.5862V15.0486L0.282897 17.6622C0.101814 17.8432 5.46844e-05 18.0888 0 18.3448V21.2414C0 21.4974 0.101724 21.743 0.282793 21.9241C0.463863 22.1052 0.709446 22.2069 0.965517 22.2069H7.72414V23.1724C7.72414 24.4528 8.23276 25.6807 9.13811 26.586C10.0435 27.4914 11.2714 28 12.5517 28C13.8321 28 15.06 27.4914 15.9653 26.586C16.8707 25.6807 17.3793 24.4528 17.3793 23.1724V22.2069H24.1379C24.394 22.2069 24.6396 22.1052 24.8207 21.9241C25.0017 21.743 25.1034 21.4974 25.1034 21.2414V18.3448C25.1034 18.0888 25.0016 17.8432 24.8206 17.6622L22.2069 15.0486ZM15.4483 23.1724C15.4483 23.9406 15.1431 24.6774 14.5999 25.2206C14.0567 25.7638 13.3199 26.069 12.5517 26.069C11.7835 26.069 11.0468 25.7638 10.5036 25.2206C9.96034 24.6774 9.65517 23.9406 9.65517 23.1724V22.2069H15.4483V23.1724Z"
-              fill="grey"
-            />
-            <g id="Group 237543">
+        {/* Bell Icon - Now Interactive */}
+        <div className="relative">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 27 28"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="hidden sm:block cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setShowNotifications(!showNotifications)}
+            ref={bellRef}
+          >
+            <g id="Group 237544">
               <path
-                id="Vector_2"
-                d="M22.2068 10.6206C24.3398 10.6206 26.0689 8.89152 26.0689 6.75855C26.0689 4.62559 24.3398 2.89648 22.2068 2.89648C20.0738 2.89648 18.3447 4.62559 18.3447 6.75855C18.3447 8.89152 20.0738 10.6206 22.2068 10.6206Z"
-                fill="#FF5959"
+                id="Vector"
+                d="M22.2069 15.0486V12.5517H20.2759V15.4483C20.2759 15.7043 20.3777 15.9499 20.5588 16.1309L23.1724 18.7446V20.2759H1.93103V18.7446L4.54469 16.1309C4.72577 15.9499 4.82753 15.7043 4.82759 15.4483V11.5862C4.8249 10.2295 5.18029 8.89602 5.85788 7.72058C6.53546 6.54514 7.51124 5.56933 8.68666 4.8917C9.86207 4.21408 11.1955 3.85863 12.5522 3.86128C13.909 3.86392 15.241 4.22456 16.4138 4.90676V2.74883C15.4947 2.34188 14.5172 2.08251 13.5172 1.98028V0H11.5862V1.97931C9.2058 2.22159 6.99977 3.3379 5.3947 5.1124C3.78963 6.88689 2.89955 9.1935 2.89655 11.5862V15.0486L0.282897 17.6622C0.101814 17.8432 5.46844e-05 18.0888 0 18.3448V21.2414C0 21.4974 0.101724 21.743 0.282793 21.9241C0.463863 22.1052 0.709446 22.2069 0.965517 22.2069H7.72414V23.1724C7.72414 24.4528 8.23276 25.6807 9.13811 26.586C10.0435 27.4914 11.2714 28 12.5517 28C13.8321 28 15.06 27.4914 15.9653 26.586C16.8707 25.6807 17.3793 24.4528 17.3793 23.1724V22.2069H24.1379C24.394 22.2069 24.6396 22.1052 24.8207 21.9241C25.0017 21.743 25.1034 21.4974 25.1034 21.2414V18.3448C25.1034 18.0888 25.0016 17.8432 24.8206 17.6622L22.2069 15.0486ZM15.4483 23.1724C15.4483 23.9406 15.1431 24.6774 14.5999 25.2206C14.0567 25.7638 13.3199 26.069 12.5517 26.069C11.7835 26.069 11.0468 25.7638 10.5036 25.2206C9.96034 24.6774 9.65517 23.9406 9.65517 23.1724V22.2069H15.4483V23.1724Z"
+                fill={showNotifications ? "#5B46F6" : "grey"}
+                className="transition-colors duration-200"
               />
+              <g id="Group 237543">
+                <path
+                  id="Vector_2"
+                  d="M22.2068 10.6206C24.3398 10.6206 26.0689 8.89152 26.0689 6.75855C26.0689 4.62559 24.3398 2.89648 22.2068 2.89648C20.0738 2.89648 18.3447 4.62559 18.3447 6.75855C18.3447 8.89152 20.0738 10.6206 22.2068 10.6206Z"
+                  fill="#FF5959"
+                />
+              </g>
             </g>
-          </g>
-        </svg>
+          </svg>
+
+          {/* Notification Dropdown */}
+          {showNotifications && (
+            <div 
+              ref={notificationRef}
+              className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-30 overflow-hidden"
+            >
+              <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                <h3 className="font-medium text-gray-800 dark:text-gray-200">Notifications</h3>
+              </div>
+              
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length > 0 ? (
+                  notifications.map((notification, index) => (
+                    <div 
+                      key={index} 
+                      className="p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150"
+                    >
+                      {/* Notification content would go here */}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                    <svg 
+                      className="mx-auto h-10 w-10 mb-2 text-gray-400 dark:text-gray-500" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={1.5} 
+                        d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34" 
+                      />
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={1.5} 
+                        d="M18 2v4h-4" 
+                      />
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={1.5} 
+                        d="M18 6l-8 8" 
+                      />
+                    </svg>
+                    <p className="text-sm">No new notifications</p>
+                    <p className="text-xs mt-1">We&apos;ll notify you when something arrives</p>
+                  </div>
+                )}
+              </div>
+              
+              {notifications.length > 0 && (
+                <div className="p-2 text-center border-t border-gray-200 dark:border-gray-700">
+                  <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                    View all notifications
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="bg-[#F2F8FF] dark:bg-transparent flex justify-between py-1 sm:py-2 px-2 sm:px-4 md:px-6 rounded-2xl items-center space-x-2 sm:space-x-4 md:space-x-10">
           <div 
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cover bg-center" 
