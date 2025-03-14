@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DrawerProps {
   isOpen: boolean;
@@ -33,6 +34,12 @@ const Drawer = ({ isOpen, toggleDrawer }: DrawerProps) => {
   const activeFill = "#5B46F6";
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const inactiveFill = "text-gray-800 dark:text-white";
+
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
   
   return (
     <div
@@ -212,8 +219,8 @@ const Drawer = ({ isOpen, toggleDrawer }: DrawerProps) => {
             
             {/* Logout Link */}
             <li>
-              <Link 
-                href="/logout" 
+              <button 
+                onClick={handleLogout}
                 className={`${linkBaseClasses} ${inactiveClasses}`}
               >
                 <svg
@@ -233,7 +240,7 @@ const Drawer = ({ isOpen, toggleDrawer }: DrawerProps) => {
                   </g>
                 </svg>
                 <span className="text-lg font-inter">Logout</span>
-              </Link>
+              </button>
             </li>
           </ul>
         </nav>

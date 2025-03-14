@@ -1,4 +1,6 @@
+"use client";
 import React, { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header({
   toggleDrawer,
@@ -7,12 +9,18 @@ export default function Header({
   toggleDrawer: () => void;
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<SVGSVGElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userAvatarRef = useRef<HTMLDivElement>(null);
+  
+  const { user, logout } = useAuth();
 
-  // Close notifications when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // Handle notifications dropdown
       if (
         notificationRef.current && 
         !notificationRef.current.contains(event.target as Node) &&
@@ -20,6 +28,16 @@ export default function Header({
         !bellRef.current.contains(event.target as Node)
       ) {
         setShowNotifications(false);
+      }
+      
+      // Handle user menu dropdown
+      if (
+        userMenuRef.current && 
+        !userMenuRef.current.contains(event.target as Node) &&
+        userAvatarRef.current &&
+        !userAvatarRef.current.contains(event.target as Node)
+      ) {
+        setShowUserMenu(false);
       }
     }
 
@@ -30,9 +48,11 @@ export default function Header({
   }, []);
 
   // Sample notifications - can be replaced with real data later
-  const notifications: unknown[] = [
-    // Empty for "no notifications" state
-  ];
+  const notifications = [];
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <header className="flex items-center justify-between shadow p-2 sm:p-4 sticky top-0 dark:bg-black bg-white z-20">
@@ -130,7 +150,7 @@ export default function Header({
                       />
                     </svg>
                     <p className="text-sm">No new notifications</p>
-                    <p className="text-xs mt-1">We&apos;ll notify you when something arrives</p>
+                    <p className="text-xs mt-1">We'll notify you when something arrives</p>
                   </div>
                 )}
               </div>
@@ -148,12 +168,18 @@ export default function Header({
 
         <div className="bg-[#F2F8FF] dark:bg-transparent flex justify-between py-1 sm:py-2 px-2 sm:px-4 md:px-6 rounded-2xl items-center space-x-2 sm:space-x-4 md:space-x-10">
           <div 
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cover bg-center" 
+            ref={userAvatarRef}
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cover bg-center cursor-pointer"
             style={{ backgroundImage: "url('/default.png')" }}
+            onClick={() => setShowUserMenu(!showUserMenu)}
           ></div>
           <div className="hidden sm:block">
-            <div className="text-sm md:text-md font-semibold leading-tight md:leading-7 font-inter">James Doe</div>
-            <div className="text-xs md:text-sm font-inter truncate max-w-[120px] md:max-w-none">james@gmail.com</div>
+            <div className="text-sm md:text-md font-semibold leading-tight md:leading-7 font-inter">
+              {user?.full_name || 'User'}
+            </div>
+            <div className="text-xs md:text-sm font-inter truncate max-w-[120px] md:max-w-none">
+              {user?.email || 'user@example.com'}
+            </div>
           </div>
           <svg
             width="4"
@@ -161,7 +187,8 @@ export default function Header({
             viewBox="0 0 5 20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4 sm:w-5 sm:h-5"
+            className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer"
+            onClick={() => setShowUserMenu(!showUserMenu)}
           >
             <path
               id="Vector"
@@ -169,6 +196,29 @@ export default function Header({
               fill="#A2A7B4"
             />
           </svg>
+          
+          {/* User Menu Dropdown */}
+          {showUserMenu && (
+            <div 
+              ref={userMenuRef}
+              className="absolute right-4 top-14 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-30 overflow-hidden"
+            >
+              <div className="py-1">
+                <a 
+                  href="/dashboard/profile" 
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Profile Settings
+                </a>
+                <button 
+                  onClick={handleLogout} 
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
