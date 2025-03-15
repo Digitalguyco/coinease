@@ -233,7 +233,7 @@ export default function Dashboard() {
         setPlansLoading(true);
         const token = localStorage.getItem('accessToken');
         
-        const response = await axios.get('http://localhost:9000/api/transactions/investment-plans/', {
+        const response = await axios.get('https://coinease.live/api/transactions/investment-plans/', {
           headers: {
             Authorization: `Bearer ${token}`
           }

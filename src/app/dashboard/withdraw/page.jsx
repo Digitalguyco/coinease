@@ -67,7 +67,7 @@ export default function Withdraw() {
     const fetchUserBalance = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:9000/api/accounts/balance/', {
+        const response = await axios.get('https://coinease.live/api/accounts/balance/', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -148,7 +148,7 @@ export default function Withdraw() {
       
       // Call the API
       const response = await axios.post(
-        'http://localhost:9000/api/transactions/withdrawals/create/',
+        '"https://coinease.live/api/transactions/withdrawals/create/',
         withdrawalData,
         {
           headers: {

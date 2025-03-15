@@ -95,7 +95,7 @@ export default function Deposit() {
 
       // Make API call
       const response = await axios.post(
-        "http://localhost:9000/api/transactions/deposits/create/",
+        "https://coinease.live/api/transactions/deposits/create/",
         data,
         {
           headers: {

@@ -38,7 +38,7 @@ const InvestmentContent = () => {
     const fetchUserBalance = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:9000/api/accounts/balance/', {
+        const response = await axios.get('https://coinease.live/api/accounts/balance/', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -68,7 +68,7 @@ const InvestmentContent = () => {
         setPlansLoading(true);
         const token = localStorage.getItem('accessToken');
         
-        const response = await axios.get('http://localhost:9000/api/transactions/investment-plans/', {
+        const response = await axios.get('https://coinease.live/api/transactions/investment-plans/', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -172,7 +172,7 @@ const InvestmentContent = () => {
       };
       
       const response = await axios.post(
-        'http://localhost:9000/api/transactions/investments/create/',
+        'https://coinease.live/api/transactions/investments/create/',
         investmentData,
         {
           headers: {

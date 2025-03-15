@@ -122,7 +122,7 @@ export default function Profile() {
       };
 
       const response = await axios.put(
-        'http://localhost:9000/api/accounts/update-profile/',
+        'https://coinease.live/api/accounts/update-profile/',
         apiData,
         {
           headers: {

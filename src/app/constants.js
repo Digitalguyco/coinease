@@ -1,1 +1,1 @@
-export const API_URL = "http://localhost:9000/api/accounts";
+export const API_URL = "https://coinease.live/api/accounts";
