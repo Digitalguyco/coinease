@@ -14,7 +14,7 @@ interface Transaction {
   currency: string;
   date: string;
   description: string;
-  deposit_details?: any; // Additional details for deposits
+  deposit_details?: unknown; // Additional details for deposits
 }
 
 export default function Transactions() {
@@ -191,7 +191,7 @@ export default function Transactions() {
                   </div>
                   <h2 className="text-xl font-semibold mb-2">No Transactions Found</h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    You don't have any transactions yet. Make a deposit or investment to get started.
+                    You don&apos;t have any transactions yet. Make a deposit or investment to get started.
                   </p>
                   <div className="flex justify-center space-x-4">
                     <a 
