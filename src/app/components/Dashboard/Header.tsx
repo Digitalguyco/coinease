@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function Header({
   toggleDrawer,
@@ -150,7 +151,7 @@ export default function Header({
                       />
                     </svg>
                     <p className="text-sm">No new notifications</p>
-                    <p className="text-xs mt-1">We'll notify you when something arrives</p>
+                    <p className="text-xs mt-1">We&apos;ll notify you when something arrives</p>
                   </div>
                 )}
               </div>
@@ -204,12 +205,20 @@ export default function Header({
               className="absolute right-4 top-14 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-30 overflow-hidden"
             >
               <div className="py-1">
-                <a 
-                  href="/dashboard/profile" 
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Profile Settings
-                </a>
+                  <Link 
+                    href="/dashboard/profile" 
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Profile Settings
+                  </Link>
+
+                  <Link 
+                    href="/dashboard/myinvestments" 
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    My Investments
+                  </Link>
+
                 <button 
                   onClick={handleLogout} 
                   className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"

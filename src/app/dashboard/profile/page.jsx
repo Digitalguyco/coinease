@@ -3,22 +3,27 @@ import React, { useState, useEffect } from 'react';
 import Drawer from '../../components/Dashboard/Drawer';
 import Header from '../../components/Dashboard/Header';
 import LoadingSpinner from '../../components/Dashboard/LoadingSpinner';
+import axios from 'axios';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Profile() {
+  const { user, isLoading: authLoading, updateUserProfile } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // User profile data
   const [profile, setProfile] = useState({
-    fullName: 'James Doe',
-    email: 'james@gmail.com',
-    referralCode: 'REF72891',
-    phone: '+1 (555) 123-4567',
-    address: '123 Crypto Street, Blockchain City, BC 12345',
-    occupation: 'Software Developer',
-    annualIncome: '$120,000',
+    fullName: '',
+    email: '',
+    referralCode: '',
+    phone: '',
+    address: '',
+    occupation: '',
+    annualIncome: '',
     avatar: '/default.png',
   });
 
@@ -29,6 +34,55 @@ export default function Profile() {
     setIsDrawerOpen(!isDrawerOpen);
   };
 
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setIsLoading(true);
+        
+  
+        
+        const userData = user;
+        console.log(userData);
+        const profileData = {
+          fullName: userData.full_name || '',
+          email: userData.email || '',
+          referralCode: userData.referral_code || 'REF' + Math.floor(10000 + Math.random() * 90000),
+          phone: userData.phone || '',
+          address: userData.address || '',
+          occupation: userData.occupation || '',
+          annualIncome: userData.annual_income || '',
+          avatar: userData.avatar || '/default.png',
+        };
+        
+        setProfile(profileData);
+        setFormData(profileData);
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setErrorMessage("Failed to load profile data. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchUserProfile();
+    } else {
+      // Set some defaults if no user is available yet
+      setProfile({
+        fullName: 'User',
+        email: '',
+        referralCode: 'REF' + Math.floor(10000 + Math.random() * 90000),
+        phone: '',
+        address: '',
+        occupation: '',
+        annualIncome: '',
+        avatar: '/default.png',
+      });
+      setIsLoading(false);
+    }
+  }, [user]);
+
   const handleEditToggle = () => {
     if (isEditing) {
       // Discard changes if canceling edit mode
@@ -36,6 +90,7 @@ export default function Profile() {
     }
     setIsEditing(!isEditing);
     setSuccessMessage('');
+    setErrorMessage('');
   };
 
   const handleInputChange = (e) => {
@@ -46,22 +101,97 @@ export default function Profile() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
+    setSuccessMessage('');
+    setErrorMessage('');
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      // Convert formData to the format expected by the API
+      const apiData = {
+        full_name: formData.fullName,
+        phone: formData.phone,
+        address: formData.address,
+        occupation: formData.occupation,
+        annual_income: parseFloat(formData.annualIncome) || 0,
+        // Don't send email if it hasn't changed to avoid unnecessary validation
+        ...(formData.email !== profile.email && { email: formData.email }),
+      };
+
+      const response = await axios.put(
+        'http://localhost:9000/api/accounts/update-profile/',
+        apiData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Update local profile state
       setProfile({...formData});
+      
+      // Create updated user object for the context
+      const updatedUser = {
+        ...user,
+        full_name: formData.fullName,
+        email: formData.email,
+        phone_number: formData.phone,
+        address: formData.address,
+        occupation: formData.occupation,
+        annual_income: formData.annualIncome
+      };
+      
+      // Update user in AuthContext
+      if (updateUserProfile && typeof updateUserProfile === 'function') {
+        await updateUserProfile(updatedUser);
+      }
+      
+      // Manually update localStorage to ensure persistence after refresh
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsedUserData = JSON.parse(userData);
+        const updatedUserData = {
+          ...parsedUserData,
+          full_name: formData.fullName,
+          email: formData.email,
+          phone_number: formData.phone,
+          address: formData.address,
+          occupation: formData.occupation,
+          annual_income: formData.annualIncome
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      }
+      
       setIsEditing(false);
-      setIsLoading(false);
       setSuccessMessage('Profile updated successfully!');
       
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
       }, 3000);
-    }, 1000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      
+      if (axios.isAxiosError(error) && error.response) {
+        // Handle specific API error messages
+        if (error.response.data.error) {
+          setErrorMessage(error.response.data.error);
+        } else if (error.response.data.detail) {
+          setErrorMessage(error.response.data.detail);
+        } else {
+          setErrorMessage("Failed to update profile. Please try again.");
+        }
+      } else {
+        setErrorMessage("Network error. Please check your connection and try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAvatarChange = (e) => {
@@ -77,6 +207,10 @@ export default function Profile() {
       reader.readAsDataURL(file);
     }
   };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -115,6 +249,24 @@ export default function Profile() {
               </div>
             )}
 
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 rounded-lg flex items-center">
+                <svg 
+                  className="w-5 h-5 mr-2" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9a1 1 0 012 0v4a1 1 0 11-2 0V9zm0-4a1 1 0 112 0 1 1 0 01-2 0z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+                {errorMessage}
+              </div>
+            )}
+
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               {/* Profile Header with Avatar */}
               <div className="p-6 sm:p-8 bg-indigo-50 dark:bg-indigo-900/20 border-b border-gray-200 dark:border-gray-700">
@@ -127,7 +279,14 @@ export default function Profile() {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                
+                    {isEditing && (
+                      <div className="absolute bottom-0 right-0">
+                        <label htmlFor="avatar-upload" className="cursor-pointer">
+                         
+                       
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center sm:text-left">
@@ -135,11 +294,8 @@ export default function Profile() {
                     <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
                     <div className="mt-3 flex flex-wrap justify-center sm:justify-start gap-2">
                       <div className="text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 px-3 py-1 rounded-full">
-                        Member since 2023
+                        Member since {new Date(user?.date_joined || Date.now()).getFullYear() || '2023'}
                       </div>
-                      {/* <div className="text-xs bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-3 py-1 rounded-full">
-                        Verified
-                      </div> */}
                     </div>
                   </div>
 
@@ -219,7 +375,7 @@ export default function Profile() {
                       />
                     ) : (
                       <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        {profile.phone}
+                        {profile.phone || 'Not provided'}
                       </div>
                     )}
                   </div>
@@ -260,7 +416,7 @@ export default function Profile() {
                       ></textarea>
                     ) : (
                       <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        {profile.address}
+                        {profile.address || 'Not provided'}
                       </div>
                     )}
                   </div>
@@ -285,7 +441,7 @@ export default function Profile() {
                       />
                     ) : (
                       <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        {profile.occupation}
+                        {profile.occupation || 'Not provided'}
                       </div>
                     )}
                   </div>
@@ -303,7 +459,7 @@ export default function Profile() {
                       />
                     ) : (
                       <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        {profile.annualIncome}
+                       $ {profile.annualIncome || 'N/A'}
                       </div>
                     )}
                   </div>
@@ -313,10 +469,10 @@ export default function Profile() {
                     <div className="md:col-span-2 mt-4 flex justify-end">
                       <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                         className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium flex items-center"
                       >
-                        {isLoading ? (
+                        {isSubmitting ? (
                           <>
                             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -332,8 +488,6 @@ export default function Profile() {
                   )}
                 </div>
               </form>
-
-            
             </div>
           </div>
         </main>

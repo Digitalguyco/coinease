@@ -30,6 +30,8 @@ type AuthContextType = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+  updateUserBalance: (balance: number) => Promise<void>;
+  updateUserProfile: (profile: User) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         setIsLoading(false);
       } catch (error) {
+        console.log(error);
         // If there's an error, clear tokens and user data
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
@@ -86,6 +89,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     checkAuth();
   }, []);
+
+  // update user balance
+  const updateUserBalance = async (balance: number) => {
+    if (!user) return;
+    const bal = balance.toString();
+    setUser({ ...user, balance: bal });
+  };
 
   // Login function
   const login = async (email: string, password: string) => {
@@ -147,6 +157,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.push('/login');
   };
 
+  // update user profile
+  const updateUserProfile = async (profile: User) => {
+    if (!user) return;
+    setUser({ ...user, ...profile });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -155,12 +171,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAuthenticated,
         login,
         logout,
+        updateUserBalance,
+        updateUserProfile,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
+// update user balance
 
 // Custom hook to use auth context
 export const useAuth = () => {

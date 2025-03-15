@@ -12,7 +12,7 @@ import { API_URL } from "../constants";
 const TradingViewWidget = React.lazy(() => import("./Dashboard/TradingView"));
 
 export default function Dashboard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUserBalance } = useAuth();
   
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [theme, setTheme] = useState("light");
@@ -32,6 +32,8 @@ export default function Dashboard() {
   });
   const [marketTrends, setMarketTrends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [investmentPlans, setInvestmentPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(true);
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -40,6 +42,7 @@ export default function Dashboard() {
   // Set up polling for balance updates
   useEffect(() => {
     if (user && user.id) {
+        // console.log(user);
       // Initial balance setup from user data
       if (portfolioValue === 0 && user.balance) {
         const userBalance = parseFloat(user.balance);
@@ -56,7 +59,7 @@ export default function Dashboard() {
           setIsBalanceUpdating(true);
           const token = localStorage.getItem('accessToken');
           
-          const response = await axios.get(`${API_URL}/balance`, {
+          const response = await axios.get(`${API_URL}/balance/`, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -85,8 +88,11 @@ export default function Dashboard() {
               
               // Update portfolio value with new balance
               setPortfolioValue(newBalance);
+
+            //   update user balance in context
+            updateUserBalance(newBalance);
               
-              console.log(`Balance updated to: ${newBalance}`);
+            //   console.log(`Balance updated to: ${newBalance}`);
             }
           }
           setIsBalanceUpdating(false);
@@ -104,7 +110,7 @@ export default function Dashboard() {
       
       return () => clearInterval(intervalId);
     }
-  }, [user, portfolioValue]);
+  }, [user]);
 
   // Fetch crypto price data
   useEffect(() => {
@@ -219,7 +225,31 @@ export default function Dashboard() {
       mediaQuery.removeEventListener("change", handleChange);
     };
   }, []);
-  
+
+  // Fetch investment plans
+  useEffect(() => {
+    const fetchInvestmentPlans = async () => {
+      try {
+        setPlansLoading(true);
+        const token = localStorage.getItem('accessToken');
+        
+        const response = await axios.get('http://localhost:9000/api/transactions/investment-plans/', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        console.log(response.data);
+        setInvestmentPlans(response.data);
+      } catch (error) {
+        console.error("Error fetching investment plans:", error);
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    fetchInvestmentPlans();
+  }, []);
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -464,27 +494,42 @@ export default function Dashboard() {
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      { name: "Silver Plan", roi: "4% daily", min: "$100" },
-                      { name: "Gold Plan", roi: "5% daily", min: "$500" },
-                      { name: "Platinum Plan", roi: "7% daily", min: "$1,000" }
-                    ].map((plan, index) => (
-                      <div 
-                        key={index} 
-                        className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors duration-200"
-                      >
-                        <div>
-                          <div className="text-sm font-medium">{plan.name}</div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{plan.roi}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">Min: {plan.min}</span>
+                    {plansLoading ? (
+                      Array(3).fill(0).map((_, index) => (
+                        <div 
+                          key={index} 
+                          className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 animate-pulse"
+                        >
+                          <div>
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
                           </div>
+                          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
                         </div>
-                        <Link href={'/dashboard/invest'} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
-                          Invest
-                        </Link>
+                      ))
+                    ) : investmentPlans.length > 0 ? (
+                      investmentPlans.slice(0, 3).map((plan) => (
+                        <div 
+                          key={plan.id} 
+                          className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors duration-200"
+                        >
+                          <div>
+                            <div className="text-sm font-medium">{plan.tier.toUpperCase()} {plan.level.toUpperCase()} Plan</div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{plan.daily_roi}% daily</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Min: ${plan.min_deposit}</span>
+                            </div>
+                          </div>
+                          <Link href={`/dashboard/invest?plan=${plan.id}`} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
+                            Invest
+                          </Link>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                        No investment plans available
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>

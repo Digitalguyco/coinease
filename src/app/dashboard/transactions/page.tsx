@@ -3,160 +3,25 @@ import React, { useState, useEffect, Suspense } from "react";
 import Drawer from "../../components/Dashboard/Drawer";
 import Header from "../../components/Dashboard/Header";
 import LoadingSpinner from "../../components/Dashboard/LoadingSpinner";
+import axios from "axios";
 
-// Transaction type definition
+// Transaction type definition updated to match API response
 interface Transaction {
   id: string;
-  type: 'deposit' | 'withdrawal' | 'investment';
-  status: 'successful' | 'failed' | 'pending';
+  type: string;
+  status: string;
   amount: number;
   currency: string;
   date: string;
   description: string;
+  deposit_details?: any; // Additional details for deposits
 }
-
-// Dummy transaction data
-const dummyTransactions: Transaction[] = [
-  {
-    id: "tx1",
-    type: "deposit",
-    status: "successful",
-    amount: 2.5,
-    currency: "BTC",
-    date: "2023-11-01T14:30:00",
-    description: "Deposit from external wallet"
-  },
-  {
-    id: "tx2",
-    type: "withdrawal",
-    status: "failed",
-    amount: 1.2,
-    currency: "ETH",
-    date: "2023-11-02T09:15:00",
-    description: "Withdrawal attempt to wallet ending in 8f4d"
-  },
-  {
-    id: "tx3",
-    type: "investment",
-    status: "successful",
-    amount: 500,
-    currency: "USDT",
-    date: "2023-11-03T16:45:00",
-    description: "Added funds to Silver investment plan"
-  },
-  {
-    id: "tx4",
-    type: "deposit",
-    status: "pending",
-    amount: 0.75,
-    currency: "BTC",
-    date: "2023-11-04T11:20:00",
-    description: "Deposit from Binance exchange"
-  },
-  {
-    id: "tx5",
-    type: "withdrawal",
-    status: "successful",
-    amount: 1000,
-    currency: "USDT",
-    date: "2023-11-05T13:10:00",
-    description: "Withdrawal to bank account"
-  },
-  {
-    id: "tx6",
-    type: "investment",
-    status: "successful",
-    amount: 2000,
-    currency: "USDT",
-    date: "2023-11-06T10:05:00",
-    description: "Added funds to Gold investment plan"
-  },
-  {
-    id: "tx7",
-    type: "deposit",
-    status: "failed",
-    amount: 1.5,
-    currency: "ETH",
-    date: "2023-11-07T15:30:00",
-    description: "Deposit attempt from MetaMask wallet"
-  },
-  {
-    id: "tx8",
-    type: "withdrawal",
-    status: "pending",
-    amount: 0.5,
-    currency: "BTC",
-    date: "2023-11-08T09:45:00",
-    description: "Withdrawal to Coinbase"
-  },
-  {
-    id: "tx9",
-    type: "investment",
-    status: "failed",
-    amount: 5000,
-    currency: "USDT",
-    date: "2023-11-09T14:20:00",
-    description: "Failed attempt to add funds to Platinum plan"
-  },
-  {
-    id: "tx10",
-    type: "deposit",
-    status: "successful",
-    amount: 3.2,
-    currency: "ETH",
-    date: "2023-11-10T11:15:00",
-    description: "Deposit from Kraken exchange"
-  },
-  {
-    id: "tx11",
-    type: "withdrawal",
-    status: "successful",
-    amount: 0.3,
-    currency: "BTC",
-    date: "2023-11-11T16:30:00",
-    description: "Withdrawal to hardware wallet"
-  },
-  {
-    id: "tx12",
-    type: "investment",
-    status: "pending",
-    amount: 1500,
-    currency: "USDT",
-    date: "2023-11-12T10:40:00",
-    description: "Processing addition to Silver plan"
-  },
-  {
-    id: "tx13",
-    type: "deposit",
-    status: "successful",
-    amount: 0.8,
-    currency: "BTC",
-    date: "2023-11-13T13:25:00",
-    description: "Deposit from external wallet"
-  },
-  {
-    id: "tx14",
-    type: "withdrawal",
-    status: "failed",
-    amount: 2.1,
-    currency: "ETH",
-    date: "2023-11-14T14:50:00",
-    description: "Insufficient funds for withdrawal"
-  },
-  {
-    id: "tx15",
-    type: "investment",
-    status: "successful",
-    amount: 3000,
-    currency: "USDT",
-    date: "2023-11-15T09:30:00",
-    description: "Added funds to Platinum investment plan"
-  },
-];
 
 export default function Transactions() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   
@@ -172,10 +37,40 @@ export default function Transactions() {
     setIsDrawerOpen(!isDrawerOpen);
   };
 
-  // Initialize data
+  // Fetch transactions from API
   useEffect(() => {
-    setTransactions(dummyTransactions);
-    setFilteredTransactions(dummyTransactions);
+    const fetchTransactions = async () => {
+      setIsLoading(true);
+      setIsError(false);
+      
+      try {
+        const token = localStorage.getItem('accessToken');
+        
+        const response = await axios.get('http://localhost:9000/api/transactions/transactions/', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setTransactions(response.data);
+        setFilteredTransactions(response.data);
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+        setIsError(true);
+        if (axios.isAxiosError(error) && error.response) {
+          setErrorMessage(error.response.data.error || "Failed to load transactions");
+        } else {
+          setErrorMessage("Network error. Please try again later.");
+        }
+      } finally {
+        // Add a small delay to prevent flashing of loading state
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
+      }
+    };
+    
+    fetchTransactions();
   }, []);
 
   // Apply filters
@@ -209,23 +104,19 @@ export default function Transactions() {
     setCurrentPage(1);
   };
 
-  // Introduce a delay for the loading spinner
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500); // Delay in milliseconds
-
-    return () => clearTimeout(timer);
-  }, []);
-
   // Status badge style helper
   const getStatusBadgeClass = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'successful':
+      case 'completed':
+      case 'success':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       case 'failed':
+      case 'failure':
+      case 'rejected':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
       case 'pending':
+      case 'processing':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
@@ -234,7 +125,7 @@ export default function Transactions() {
 
   // Type badge style helper
   const getTypeBadgeClass = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'deposit':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
       case 'withdrawal':
@@ -250,6 +141,18 @@ export default function Transactions() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Get available transaction types for filter
+  const getAvailableTypes = () => {
+    const types = new Set(transactions.map(tx => tx.type));
+    return Array.from(types);
+  };
+
+  // Get available transaction statuses for filter
+  const getAvailableStatuses = () => {
+    const statuses = new Set(transactions.map(tx => tx.status));
+    return Array.from(statuses);
   };
 
   if (isLoading) {
@@ -270,173 +173,220 @@ export default function Transactions() {
             <div className="container mx-auto">
               <h1 className="text-2xl font-bold mb-6">Transactions</h1>
               
-              {/* Filters */}
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-6">
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <label htmlFor="typeFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Transaction Type
-                    </label>
-                    <select
-                      id="typeFilter"
-                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                    >
-                      <option value="all">All Types</option>
-                      <option value="deposit">Deposit</option>
-                      <option value="withdrawal">Withdrawal</option>
-                      <option value="investment">Investment</option>
-                    </select>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Status
-                    </label>
-                    <select
-                      id="statusFilter"
-                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="successful">Successful</option>
-                      <option value="failed">Failed</option>
-                      <option value="pending">Pending</option>
-                    </select>
-                  </div>
+              {/* Error Message */}
+              {isError && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                  <p className="font-bold">Error</p>
+                  <p>{errorMessage}</p>
                 </div>
-                
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {currentItems.length} of {filteredTransactions.length} transactions
-                </div>
-              </div>
+              )}
               
-              {/* Transactions Table */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-6">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              {/* No Transactions Message */}
+              {!isLoading && !isError && transactions.length === 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+                    <svg className="w-8 h-8 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2">No Transactions Found</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    You don't have any transactions yet. Make a deposit or investment to get started.
+                  </p>
+                  <div className="flex justify-center space-x-4">
+                    <a 
+                      href="/dashboard/deposit" 
+                      className="px-4 py-2 bg-[#5B46F6] text-white rounded-lg hover:bg-[#4938C4] transition-colors"
+                    >
+                      Make a Deposit
+                    </a>
+                    <a 
+                      href="/dashboard/invest" 
+                      className="px-4 py-2 border border-[#5B46F6] text-[#5B46F6] rounded-lg hover:bg-[#5B46F6]/10 transition-colors"
+                    >
+                      Invest Now
+                    </a>
+                  </div>
+                </div>
+              )}
+              
+              {!isLoading && !isError && transactions.length > 0 && (
+                <>
+                  {/* Filters */}
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-6">
+                    <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                      <div className="flex-1">
+                        <label htmlFor="typeFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Transaction Type
+                        </label>
+                        <select
+                          id="typeFilter"
+                          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          value={typeFilter}
+                          onChange={(e) => setTypeFilter(e.target.value)}
+                        >
+                          <option value="all">All Types</option>
+                          {getAvailableTypes().map(type => (
+                            <option key={type} value={type}>
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Status
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Description
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {currentItems.length > 0 ? (
-                        currentItems.map((transaction) => (
-                          <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {formatDate(transaction.date)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs rounded-full ${getTypeBadgeClass(transaction.type)}`}>
-                                {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {transaction.amount} {transaction.currency}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(transaction.status)}`}>
-                                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {transaction.description}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                            No transactions found matching your filters.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-gray-800 px-4 py-3 rounded-xl shadow-md">
-                <div className="flex items-center mb-4 sm:mb-0">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Show
-                  </span>
-                  <select
-                    className="mx-2 border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    value={itemsPerPage}
-                    onChange={handleItemsPerPageChange}
-                  >
-                    {[5, 10, 15, 20].map(number => (
-                      <option key={number} value={number}>
-                        {number}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    per page
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
-                    disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded-md ${
-                      currentPage === 1
-                        ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  
-                  <div className="flex space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                      <button
-                        key={number}
-                        onClick={() => paginate(number)}
-                        className={`w-8 h-8 rounded-md ${
-                          currentPage === number
-                            ? 'bg-[#5B46F6] text-white'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        {number}
-                      </button>
-                    ))}
+                        </label>
+                        <select
+                          id="statusFilter"
+                          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                          <option value="all">All Statuses</option>
+                          {getAvailableStatuses().map(status => (
+                            <option key={status} value={status}>
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Showing {currentItems.length} of {filteredTransactions.length} transactions
+                    </div>
                   </div>
                   
-                  <button
-                    onClick={() => paginate(currentPage < totalPages ? currentPage + 1 : totalPages)}
-                    disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded-md ${
-                      currentPage === totalPages
-                        ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+                  {/* Transactions Table */}
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-6">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-700">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Date
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Description
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          {currentItems.length > 0 ? (
+                            currentItems.map((transaction) => (
+                              <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                  {formatDate(transaction.date)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${getTypeBadgeClass(transaction.type)}`}>
+                                    {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                  {transaction.amount} {transaction.currency}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(transaction.status)}`}>
+                                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                  {transaction.description}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No transactions found matching your filters.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  {/* Pagination */}
+                  {filteredTransactions.length > 0 && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-gray-800 px-4 py-3 rounded-xl shadow-md">
+                      <div className="flex items-center mb-4 sm:mb-0">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Show
+                        </span>
+                        <select
+                          className="mx-2 border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          value={itemsPerPage}
+                          onChange={handleItemsPerPageChange}
+                        >
+                          {[5, 10, 15, 20].map(number => (
+                            <option key={number} value={number}>
+                              {number}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          per page
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
+                          disabled={currentPage === 1}
+                          className={`px-3 py-1 rounded-md ${
+                            currentPage === 1
+                              ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          Previous
+                        </button>
+                        
+                        <div className="flex space-x-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                            <button
+                              key={number}
+                              onClick={() => paginate(number)}
+                              className={`w-8 h-8 rounded-md ${
+                                currentPage === number
+                                  ? 'bg-[#5B46F6] text-white'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              {number}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <button
+                          onClick={() => paginate(currentPage < totalPages ? currentPage + 1 : totalPages)}
+                          disabled={currentPage === totalPages || totalPages === 0}
+                          className={`px-3 py-1 rounded-md ${
+                            currentPage === totalPages || totalPages === 0
+                              ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </main>
         </div>
