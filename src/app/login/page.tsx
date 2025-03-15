@@ -1,10 +1,18 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function Login() {
+// Create a loading component for the Suspense fallback
+const LoginLoading = () => (
+  <div className="flex justify-center items-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5B46F6]"></div>
+  </div>
+);
+
+// Create a client component for the login content
+const LoginContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -169,5 +177,14 @@ export default function Login() {
         </div>
       </section>
     </>
+  );
+};
+
+// Main component with Suspense
+export default function Login() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   );
 }

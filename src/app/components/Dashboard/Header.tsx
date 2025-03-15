@@ -49,7 +49,7 @@ export default function Header({
   }, []);
 
   // Sample notifications - can be replaced with real data later
-  const notifications = [];
+  const notifications: unknown[] = [];
 
   const handleLogout = () => {
     logout();
