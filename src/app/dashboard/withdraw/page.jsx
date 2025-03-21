@@ -148,7 +148,7 @@ export default function Withdraw() {
       
       // Call the API
       const response = await axios.post(
-        '"https://coinease.live/api/transactions/withdrawals/create/',
+        'https://coinease.live/api/transactions/withdrawals/create/',
         withdrawalData,
         {
           headers: {

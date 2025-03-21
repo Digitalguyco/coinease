@@ -27,7 +27,7 @@ export default function Investments() {
         setIsLoading(true);
         const token = localStorage.getItem('accessToken');
         
-        const response = await axios.get('http://localhost:9000/api/transactions/investments/', {
+        const response = await axios.get('https://coinease.live/api/transactions/investments/', {
           headers: {
             Authorization: `Bearer ${token}`
           }

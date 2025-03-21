@@ -94,9 +94,37 @@ export default function Pricing() {
                     </svg>
                   </div>
                   <div className="text-black text-sm md:text-[15px] font-medium font-inter">
-                    Min Deposit:  { activePlan === "pro" ?  "$60,000.00" : "$100"}
+                    Min Deposit:  { activePlan === "pro" ?  "$60,000.00" : "$500"}
                   </div>
+                  
                 </div>
+
+                <div className="justify-start items-start gap-2.5 flex">
+                  <div data-svg-wrapper className="relative flex-shrink-0">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        opacity="0.1"
+                        d="M10 0C4.47715 0 0 4.47715 0 10C0 15.5228 4.47715 20 10 20C15.5228 20 20 15.5228 20 10C19.9936 4.47982 15.5202 0.00642897 10 0Z"
+                        fill="black"
+                      />
+                      <path
+                        d="M15.7725 6.83334L10.0683 14.5742C9.93229 14.7547 9.72944 14.8729 9.50535 14.9024C9.28126 14.9319 9.05473 14.87 8.87666 14.7308L4.80333 11.4742C4.44388 11.1865 4.38568 10.662 4.67333 10.3025C4.96098 9.94306 5.48555 9.88486 5.845 10.1725L9.24166 12.89L14.4308 5.84751C14.601 5.59217 14.8977 5.45099 15.2032 5.48004C15.5086 5.50909 15.7734 5.70365 15.8924 5.98649C16.0114 6.26932 15.9653 6.59466 15.7725 6.83334Z"
+                        fill="black"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-black text-sm md:text-[15px] font-medium font-inter">
+                    Referral Bonus:  { activePlan === "pro" ?  "10%" : "5%"}
+                  </div>
+                  
+                </div>
+                
                 <div className="justify-start items-start gap-2.5 flex">
                   <div data-svg-wrapper className="relative flex-shrink-0">
                     <svg
@@ -235,6 +263,31 @@ export default function Pricing() {
                     </svg>
                   </div>
                   <div className="text-black text-sm md:text-[15px] font-medium font-inter">
+                    Referral Bonus:  { activePlan === "pro" ?  "10%" : "5%"}
+                  </div>
+                  
+                </div>
+                <div className="justify-start items-start gap-2.5 flex">
+                  <div data-svg-wrapper className="relative flex-shrink-0">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        opacity="0.1"
+                        d="M10 0C4.47715 0 0 4.47715 0 10C0 15.5228 4.47715 20 10 20C15.5228 20 20 15.5228 20 10C19.9936 4.47982 15.5202 0.00642897 10 0Z"
+                        fill="black"
+                      />
+                      <path
+                        d="M15.7725 6.83334L10.0683 14.5742C9.93229 14.7547 9.72944 14.8729 9.50535 14.9024C9.28126 14.9319 9.05473 14.87 8.87666 14.7308L4.80333 11.4742C4.44388 11.1865 4.38568 10.662 4.67333 10.3025C4.96098 9.94306 5.48555 9.88486 5.845 10.1725L9.24166 12.89L14.4308 5.84751C14.601 5.59217 14.8977 5.45099 15.2032 5.48004C15.5086 5.50909 15.7734 5.70365 15.8924 5.98649C16.0114 6.26932 15.9653 6.59466 15.7725 6.83334Z"
+                        fill="black"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-black text-sm md:text-[15px] font-medium font-inter">
                     Max Deposit:  { activePlan === "pro" ?  "$250,000.00" : "$10,000.00"}
                   </div>
                 </div>
@@ -331,6 +384,31 @@ export default function Pricing() {
                   <div className="text-white text-sm md:text-[15px] font-medium font-inter">
                     Min Deposit: { activePlan === "pro" ?  "$100,000.00" : "$10,000.00"}
                   </div>
+                </div>
+                <div className="justify-start items-start gap-2.5 flex">
+                  <div data-svg-wrapper className="relative flex-shrink-0">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        opacity="0.1"
+                        d="M10 0C4.47715 0 0 4.47715 0 10C0 15.5228 4.47715 20 10 20C15.5228 20 20 15.5228 20 10C19.9936 4.47982 15.5202 0.00642897 10 0Z"
+                        fill="white"
+                      />
+                      <path
+                        d="M15.7725 6.83334L10.0683 14.5742C9.93229 14.7547 9.72944 14.8729 9.50535 14.9024C9.28126 14.9319 9.05473 14.87 8.87666 14.7308L4.80333 11.4742C4.44388 11.1865 4.38568 10.662 4.67333 10.3025C4.96098 9.94306 5.48555 9.88486 5.845 10.1725L9.24166 12.89L14.4308 5.84751C14.601 5.59217 14.8977 5.45099 15.2032 5.48004C15.5086 5.50909 15.7734 5.70365 15.8924 5.98649C16.0114 6.26932 15.9653 6.59466 15.7725 6.83334Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-white text-sm md:text-[15px] font-medium font-inter">
+                    Referral Bonus:  { activePlan === "pro" ?  "10%" : "5%"}
+                  </div>
+                  
                 </div>
                 <div className="justify-start items-start gap-2.5 flex">
                   <div data-svg-wrapper className="relative flex-shrink-0">
