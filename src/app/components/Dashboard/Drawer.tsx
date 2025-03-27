@@ -220,7 +220,7 @@ const Drawer = ({ isOpen, toggleDrawer }: DrawerProps) => {
             {/* Support Link */}
             <li>
               <a 
-                href="https://wa.link/lfwhbe"
+                href="https://wa.link/5uy9hp"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`${linkBaseClasses} ${inactiveClasses}`}

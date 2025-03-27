@@ -52,7 +52,7 @@ export default function Home() {
 
         {/* WhatsApp Floating Button */}
         <a
-          href="https://wa.link/lfwhbe" // Replace YOUR_PHONE_NUMBER with your actual WhatsApp number (include country code)
+          href="https://wa.link/5uy9hp" // Replace YOUR_PHONE_NUMBER with your actual WhatsApp number (include country code)
           target="_blank"
           rel="noopener noreferrer"
           className="fixed bottom-6 right-6 bg-[#25D366] hover:bg-[#128C7E] p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 cursor-pointer"
