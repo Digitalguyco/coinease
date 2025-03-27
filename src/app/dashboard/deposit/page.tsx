@@ -59,9 +59,11 @@ export default function Deposit() {
 
   const handleAmountSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    if (depositAmount && parseFloat(depositAmount) > 0) {
+    if (depositAmount && parseFloat(depositAmount) >= 50) {
       setCurrentStep(2);
       window.scrollTo(0, 0);
+    } else {
+      setApiError("The minimum deposit amount is $50. Please enter a higher amount.");
     }
   };
 
@@ -251,7 +253,7 @@ export default function Deposit() {
                             value={depositAmount}
                             onChange={(e) => setDepositAmount(e.target.value)}
                             placeholder="0.00"
-                            min="1"
+                            min="50"
                             step="0.01"
                             className="w-full pl-8 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             required
@@ -463,7 +465,7 @@ export default function Deposit() {
                                     selectedNetwork as keyof typeof cryptoAddresses
                                   ]
                                 }
-    </div>
+                              </div>
                               <button
                                 onClick={() =>
                                   copyToClipboard(
