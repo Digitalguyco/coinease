@@ -10,6 +10,7 @@ import axios from "axios";
 import { API_URL } from "../constants";
 // Use React.lazy to dynamically import the TradingViewWidget
 const TradingViewWidget = React.lazy(() => import("./Dashboard/TradingView"));
+const TradingChart = React.lazy(() => import("./Dashboard/TradingChart"));
 
 export default function Dashboard() {
   const { user, isAuthenticated, updateUserBalance } = useAuth();
@@ -17,6 +18,11 @@ export default function Dashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [theme, setTheme] = useState("light");
   const [activePeriod, setActivePeriod] = useState("1M");
+  const [activeTab, setActiveTab] = useState("overview"); // Add activeTab state: "overview" or "signals"
+  
+  // Signals tab specific state
+  const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
+  const [tradeType, setTradeType] = useState("buy"); // "buy" or "sell"
   
   // State for live data
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -273,362 +279,538 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 relative">
-               
-                
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Total Portfolio Value</div>
-                  {isLoading ? (
-                    <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-                  ) : (
-                    <div className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      percentChange >= 0 
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                        : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                    }`}>
-                      {percentChange >= 0 ? "+" : ""}{percentChange.toFixed(1)}%
-                    </div>
-                  )}
-                </div>
-                {isLoading ? (
-                  <div className="w-32 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                ) : (
-                  <div className="flex items-baseline">
-                    <span className="text-2xl font-bold">${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    <span className={`ml-2 text-sm ${
-                      dailyChange >= 0 
-                        ? "text-green-600 dark:text-green-400" 
-                        : "text-red-600 dark:text-red-400"
-                    }`}>
-                      {dailyChange >= 0 ? "+" : ""}{dailyChange.toFixed(2)} today
-                    </span>
-                  </div>
-                )}
-                <Link href="/dashboard/deposit" className="mt-3 block w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors duration-200 text-center">
-                  Add Funds
-                </Link>
-              </div>
+            {/* Tab Navigation */}
+            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`py-2 px-4 font-medium text-sm ${
+                  activeTab === "overview"
+                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab("signals")}
+                className={`py-2 px-4 font-medium text-sm ${
+                  activeTab === "signals"
+                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                Trading Signals
+              </button>
+            </div>
 
-              {/* Dynamic crypto cards with real-time data */}
-              {['BTC', 'ETH', 'LTC'].map((symbol, index) => {
-                const coin = {
-                  BTC: { name: 'Bitcoin' },
-                  ETH: { name: 'Ethereum' },
-                  LTC: { name: 'Litecoin' }
-                }[symbol];
-                
-                const data = cryptoData[symbol];
-                const isPositive = data.change >= 0;
-                
-                return (
-                  <div 
-                    key={symbol} 
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                  >
+            {/* Overview Tab Content */}
+            {activeTab === "overview" && (
+              <>
+                {/* Summary Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 relative">
+                   
+                    
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{coin.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Total Portfolio Value</div>
                       {isLoading ? (
                         <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                       ) : (
                         <div className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          isPositive
+                          percentChange >= 0 
                             ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                             : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                         }`}>
-                          {isPositive ? "+" : ""}{data.change.toFixed(1)}%
+                          {percentChange >= 0 ? "+" : ""}{percentChange.toFixed(1)}%
                         </div>
                       )}
                     </div>
                     {isLoading ? (
-                      <>
-                        <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
-                        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      </>
+                      <div className="w-32 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                     ) : (
-                      <>
-                        <div className="flex items-baseline">
-                          <span className="text-2xl font-bold">${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{data.holdings} {symbol}</span>
-                        </div>
-                        <div className="mt-3 h-10">
-                          {data.sparkline.length > 0 ? (
-                            <Sparklines data={data.sparkline.slice(-100)} height={15} width={100}>
-                              <SparklinesLine color={theme === "dark" ? "#818cf8" : "#4f46e5"} />
-                            </Sparklines>
-                          ) : (
-                            <div className="h-10 flex items-center justify-center text-sm text-gray-400">
-                              No chart data available
-                            </div>
-                          )}
-                        </div>
-                      </>
+                      <div className="flex items-baseline">
+                        <span className="text-2xl font-bold">${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className={`ml-2 text-sm ${
+                          dailyChange >= 0 
+                            ? "text-green-600 dark:text-green-400" 
+                            : "text-red-600 dark:text-red-400"
+                        }`}>
+                          {dailyChange >= 0 ? "+" : ""}{dailyChange.toFixed(2)} today
+                        </span>
+                      </div>
                     )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Portfolio Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              {/* Charts Section */}
-              <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-lg">Market Chart</h3>
-                  <div className="flex space-x-2">
-                    {["1D", "1W", "1M", "3M", "1Y", "ALL"].map((period) => (
-                      <button
-                        key={period}
-                        className={`px-2 py-1 text-xs font-medium rounded ${
-                          period === activePeriod 
-                            ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" 
-                            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        }`}
-                        onClick={() => setActivePeriod(period)}
-                      >
-                        {period}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="h-[400px]">
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <TradingViewWidget />
-                  </Suspense>
-                </div>
-              </div>
-
-              {/* Portfolio & Plans */}
-              <div className="space-y-6">
-                {/* Portfolio Distribution Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                  <h3 className="font-bold text-lg mb-4">Portfolio Distribution</h3>
-                  
-                  {isLoading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="space-y-2">
-                          <div className="flex justify-between">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-8 animate-pulse"></div>
-                          </div>
-                          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      {/* Calculate portfolio distribution based on real prices */}
-                      {(() => {
-                        const totalValue = portfolioValue;
-                        const btcValue = cryptoData.BTC.price * cryptoData.BTC.holdings;
-                        const ethValue = cryptoData.ETH.price * cryptoData.ETH.holdings;
-                        const ltcValue = cryptoData.LTC.price * cryptoData.LTC.holdings;
-                        const otherValue = totalValue - btcValue - ethValue - ltcValue;
-                        
-                        const btcPercent = Math.round((btcValue / totalValue) * 100) || 0;
-                        const ethPercent = Math.round((ethValue / totalValue) * 100) || 0;
-                        const ltcPercent = Math.round((ltcValue / totalValue) * 100) || 0;
-                        const otherPercent = Math.max(0, 100 - btcPercent - ethPercent - ltcPercent);
-                        
-                        return (
-                          <>
-                            <div className="flex items-center mb-3">
-                              <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>
-                              <div className="flex-1 flex justify-between">
-                                <span className="text-sm">Bitcoin (BTC)</span>
-                                <span className="text-sm font-medium">{btcPercent}%</span>
-                              </div>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
-                              <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${btcPercent}%` }}></div>
-                            </div>
-                            
-                            <div className="flex items-center mb-3">
-                              <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
-                              <div className="flex-1 flex justify-between">
-                                <span className="text-sm">Ethereum (ETH)</span>
-                                <span className="text-sm font-medium">{ethPercent}%</span>
-                              </div>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
-                              <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${ethPercent}%` }}></div>
-                            </div>
-                            
-                            <div className="flex items-center mb-3">
-                              <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-                              <div className="flex-1 flex justify-between">
-                                <span className="text-sm">Litecoin (LTC)</span>
-                                <span className="text-sm font-medium">{ltcPercent}%</span>
-                              </div>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
-                              <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${ltcPercent}%` }}></div>
-                            </div>
-                            
-                            <div className="flex items-center mb-3">
-                              <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                              <div className="flex-1 flex justify-between">
-                                <span className="text-sm">Cash Balance</span>
-                                <span className="text-sm font-medium">{otherPercent}%</span>
-                              </div>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
-                              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${otherPercent}%` }}></div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </>
-                  )}
-                </div>
-
-                {/* Investment Plans */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-lg">Top Plans</h3>
-                    <Link href={'/dashboard/invest'} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
-                      View All
+                    <Link href="/dashboard/deposit" className="mt-3 block w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors duration-200 text-center">
+                      Add Funds
                     </Link>
                   </div>
 
-                  <div className="space-y-3">
-                    {plansLoading ? (
-                      Array(3).fill(0).map((_, index) => (
-                        <div 
-                          key={index} 
-                          className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 animate-pulse"
-                        >
-                          <div>
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-                          </div>
-                          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                        </div>
-                      ))
-                    ) : investmentPlans.length > 0 ? (
-                      investmentPlans.slice(0, 3).map((plan) => (
-                        <div 
-                          key={plan.id} 
-                          className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors duration-200"
-                        >
-                          <div>
-                            <div className="text-sm font-medium">{plan.tier.toUpperCase()} {plan.level.toUpperCase()} Plan</div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{plan.daily_roi}% daily</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">Min: ${plan.min_deposit}</span>
+                  {/* Dynamic crypto cards with real-time data */}
+                  {['BTC', 'ETH', 'LTC'].map((symbol, index) => {
+                    const coin = {
+                      BTC: { name: 'Bitcoin' },
+                      ETH: { name: 'Ethereum' },
+                      LTC: { name: 'Litecoin' }
+                    }[symbol];
+                    
+                    const data = cryptoData[symbol];
+                    const isPositive = data.change >= 0;
+                    
+                    return (
+                      <div 
+                        key={symbol} 
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{coin.name}</div>
+                          {isLoading ? (
+                            <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                          ) : (
+                            <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                              isPositive
+                                ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                                : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                            }`}>
+                              {isPositive ? "+" : ""}{data.change.toFixed(1)}%
                             </div>
-                          </div>
-                          <Link href={`/dashboard/invest?plan=${plan.id}`} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
-                            Invest
-                          </Link>
+                          )}
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                        No investment plans available
+                        {isLoading ? (
+                          <>
+                            <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
+                            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-baseline">
+                              <span className="text-2xl font-bold">${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{data.holdings} {symbol}</span>
+                            </div>
+                            <div className="mt-3 h-10">
+                              {data.sparkline.length > 0 ? (
+                                <Sparklines data={data.sparkline.slice(-100)} height={15} width={100}>
+                                  <SparklinesLine color={theme === "dark" ? "#818cf8" : "#4f46e5"} />
+                                </Sparklines>
+                              ) : (
+                                <div className="h-10 flex items-center justify-center text-sm text-gray-400">
+                                  No chart data available
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+
+                {/* Portfolio Distribution */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                  {/* Charts Section */}
+                  <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-lg">Market Chart</h3>
+                      <div className="flex space-x-2">
+                        {["1D", "1W", "1M", "3M", "1Y", "ALL"].map((period) => (
+                          <button
+                            key={period}
+                            className={`px-2 py-1 text-xs font-medium rounded ${
+                              period === activePeriod 
+                                ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" 
+                                : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            }`}
+                            onClick={() => setActivePeriod(period)}
+                          >
+                            {period}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="h-[400px]">
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <TradingViewWidget />
+                      </Suspense>
+                    </div>
+                  </div>
+
+                  {/* Portfolio & Plans */}
+                  <div className="space-y-6">
+                    {/* Portfolio Distribution Card */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                      <h3 className="font-bold text-lg mb-4">Portfolio Distribution</h3>
+                      
+                      {isLoading ? (
+                        <div className="space-y-4">
+                          {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="space-y-2">
+                              <div className="flex justify-between">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-8 animate-pulse"></div>
+                              </div>
+                              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Calculate portfolio distribution based on real prices */}
+                          {(() => {
+                            const totalValue = portfolioValue;
+                            const btcValue = cryptoData.BTC.price * cryptoData.BTC.holdings;
+                            const ethValue = cryptoData.ETH.price * cryptoData.ETH.holdings;
+                            const ltcValue = cryptoData.LTC.price * cryptoData.LTC.holdings;
+                            const otherValue = totalValue - btcValue - ethValue - ltcValue;
+                            
+                            const btcPercent = Math.round((btcValue / totalValue) * 100) || 0;
+                            const ethPercent = Math.round((ethValue / totalValue) * 100) || 0;
+                            const ltcPercent = Math.round((ltcValue / totalValue) * 100) || 0;
+                            const otherPercent = Math.max(0, 100 - btcPercent - ethPercent - ltcPercent);
+                            
+                            return (
+                              <>
+                                <div className="flex items-center mb-3">
+                                  <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>
+                                  <div className="flex-1 flex justify-between">
+                                    <span className="text-sm">Bitcoin (BTC)</span>
+                                    <span className="text-sm font-medium">{btcPercent}%</span>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                                  <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${btcPercent}%` }}></div>
+                                </div>
+                                
+                                <div className="flex items-center mb-3">
+                                  <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                                  <div className="flex-1 flex justify-between">
+                                    <span className="text-sm">Ethereum (ETH)</span>
+                                    <span className="text-sm font-medium">{ethPercent}%</span>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${ethPercent}%` }}></div>
+                                </div>
+                                
+                                <div className="flex items-center mb-3">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                                  <div className="flex-1 flex justify-between">
+                                    <span className="text-sm">Litecoin (LTC)</span>
+                                    <span className="text-sm font-medium">{ltcPercent}%</span>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${ltcPercent}%` }}></div>
+                                </div>
+                                
+                                <div className="flex items-center mb-3">
+                                  <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                  <div className="flex-1 flex justify-between">
+                                    <span className="text-sm">Cash Balance</span>
+                                    <span className="text-sm font-medium">{otherPercent}%</span>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mb-4">
+                                  <div className="bg-green-500 h-2 rounded-full" style={{ width: `${otherPercent}%` }}></div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Investment Plans */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg">Top Plans</h3>
+                        <Link href={'/dashboard/invest'} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
+                          View All
+                        </Link>
+                      </div>
+
+                      <div className="space-y-3">
+                        {plansLoading ? (
+                          Array(3).fill(0).map((_, index) => (
+                            <div 
+                              key={index} 
+                              className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 animate-pulse"
+                            >
+                              <div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                              </div>
+                              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                            </div>
+                          ))
+                        ) : investmentPlans.length > 0 ? (
+                          investmentPlans.slice(0, 3).map((plan) => (
+                            <div 
+                              key={plan.id} 
+                              className="flex justify-between items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors duration-200"
+                            >
+                              <div>
+                                <div className="text-sm font-medium">{plan.tier.toUpperCase()} {plan.level.toUpperCase()} Plan</div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{plan.daily_roi}% daily</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">Min: ${plan.min_deposit}</span>
+                                </div>
+                              </div>
+                              <Link href={`/dashboard/invest?plan=${plan.id}`} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
+                                Invest
+                              </Link>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                            No investment plans available
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Market Trends - Live Data */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-lg">Market Trends</h3>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {marketTrends.length > 0 ? "Live Data" : "Loading..."}
-                  </span>
-                  <div className={`w-2 h-2 rounded-full ${marketTrends.length > 0 ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}></div>
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
-                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
-                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">24h Change</th>
-                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Market Cap</th>
-                      <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {marketTrends.length > 0 ? (
-                      marketTrends.map((coin, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors duration-150">
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 flex-shrink-0 mr-3 rounded-full overflow-hidden">
-                                {coin.image ? (
-                                  <img src={coin.image} alt={coin.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                    {coin.symbol.charAt(0)}
+                {/* Market Trends - Live Data */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg">Market Trends</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {marketTrends.length > 0 ? "Live Data" : "Loading..."}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full ${marketTrends.length > 0 ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
+                          <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
+                          <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">24h Change</th>
+                          <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Market Cap</th>
+                          <th className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {marketTrends.length > 0 ? (
+                          marketTrends.map((coin, index) => (
+                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors duration-150">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 flex-shrink-0 mr-3 rounded-full overflow-hidden">
+                                    {coin.image ? (
+                                      <img src={coin.image} alt={coin.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                        {coin.symbol.charAt(0)}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              <div>
-                                <div className="font-medium">{coin.name}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">{coin.symbol}</div>
-                              </div>
-                            </div>
+                                  <div>
+                                    <div className="font-medium">{coin.name}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">{coin.symbol}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap font-medium">{coin.priceFormatted}</td>
+                              <td className={`px-4 py-3 whitespace-nowrap font-medium ${
+                                coin.trending === "up" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                              }`}>
+                                {coin.changeFormatted}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">{coin.cap}</td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex space-x-2">
+                                  <button className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded">Buy</button>
+                                  <button className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">Trade</button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          // Loading state for market trends
+                          Array(5).fill(0).map((_, index) => (
+                            <tr key={index} className="animate-pulse">
+                              <td className="px-4 py-3">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full mr-3"></div>
+                                  <div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-1"></div>
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex space-x-2">
+                                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
+                                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Signals Tab Content */}
+            {activeTab === "signals" && (
+              <>
+                {/* Trading Controls */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
+                  <div className="flex flex-wrap gap-4 items-center">
+                    <div>
+                      <label htmlFor="symbol-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Symbol
+                      </label>
+                      <select
+                        id="symbol-select"
+                        value={selectedSymbol}
+                        onChange={(e) => setSelectedSymbol(e.target.value)}
+                        className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Trade Type
+                      </label>
+                      <div className="flex rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => setTradeType("buy")}
+                          className={`px-4 py-2 ${
+                            tradeType === "buy"
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          Buy
+                        </button>
+                        <button
+                          onClick={() => setTradeType("sell")}
+                          className={`px-4 py-2 ${
+                            tradeType === "sell"
+                              ? "bg-red-500 text-white"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          Sell
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="ml-auto">
+                      <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                        Execute Trade
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Trading Chart */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
+                  <div className="h-[500px]">
+                    <Suspense fallback={<div className="h-full flex items-center justify-center"><LoadingSpinner /></div>}>
+                      <TradingChart symbol={selectedSymbol} tradeType={tradeType} />
+                    </Suspense>
+                  </div>
+                </div>
+                
+                {/* Market Signals */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
+                  <h2 className="text-lg font-semibold mb-4">Recent Signals</h2>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Symbol
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Signal
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Price
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Time
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {/* Sample signal data rows */}
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap">BTC/USDT</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              BUY
+                            </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap font-medium">{coin.priceFormatted}</td>
-                          <td className={`px-4 py-3 whitespace-nowrap font-medium ${
-                            coin.trending === "up" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                          }`}>
-                            {coin.changeFormatted}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">{coin.cap}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex space-x-2">
-                              <button className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded">Buy</button>
-                              <button className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">Trade</button>
-                            </div>
+                          <td className="px-6 py-4 whitespace-nowrap">$42,150.00</td>
+                          <td className="px-6 py-4 whitespace-nowrap">2 hours ago</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              +2.3%
+                            </span>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      // Loading state for market trends
-                      Array(5).fill(0).map((_, index) => (
-                        <tr key={index} className="animate-pulse">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full mr-3"></div>
-                              <div>
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-1"></div>
-                                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
-                              </div>
-                            </div>
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap">ETH/USDT</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              SELL
+                            </span>
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex space-x-2">
-                              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
-                              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
-                            </div>
+                          <td className="px-6 py-4 whitespace-nowrap">$2,340.80</td>
+                          <td className="px-6 py-4 whitespace-nowrap">5 hours ago</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              -1.5%
+                            </span>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap">SOL/USDT</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              BUY
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">$98.75</td>
+                          <td className="px-6 py-4 whitespace-nowrap">1 day ago</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              +4.1%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
           </main>
         </div>
       </div>
