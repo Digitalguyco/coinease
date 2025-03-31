@@ -82,32 +82,30 @@ export default function Header({
     const hasActiveInvestments = activeInvestments > 0;
 
     return (
-      <div className="group relative cursor-help">
-        <div className="hidden sm:flex items-end h-6 gap-[2px] mx-4">
-          {[...Array(bars)].map((_, index) => (
-            <div
-              key={index}
-              className={`w-1 rounded-sm transition-all duration-300 ${
-                !hasActiveInvestments && index > 0 ? 'opacity-0' : ''
-              }`}
-              style={{
-                height: `${((index + 1) / bars) * 24}px`,
-                backgroundColor: hasActiveInvestments 
-                  ? '#4CAF50' // Green for active investments
-                  : (index === 0 ? '#FF5959' : 'transparent'), // Red only for first bar when inactive
-                opacity: hasActiveInvestments 
-                  ? 1 // Full opacity for all bars when active
-                  : (index === 0 ? 1 : 0) // Only show first bar when inactive
-              }}
-            />
-          ))}
-          
-          {/* Tooltip */}
-          <div className="absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -mt-8 whitespace-nowrap">
-            {activeInvestments > 0 
-              ? `${activeInvestments} Active Investment${activeInvestments > 1 ? 's' : ''}`
-              : 'No Active Investments'}
-          </div>
+      <div className="flex items-end h-5 sm:h-6 gap-[1px] sm:gap-[2px] mx-2 sm:mx-4">
+        {[...Array(bars)].map((_, index) => (
+          <div
+            key={index}
+            className={`w-[3px] sm:w-1 rounded-sm transition-all duration-300 ${
+              !hasActiveInvestments && index > 0 ? 'opacity-0' : ''
+            }`}
+            style={{
+              height: `${((index + 1) / bars) * (window.innerWidth < 640 ? 20 : 24)}px`,
+              backgroundColor: hasActiveInvestments 
+                ? '#4CAF50' // Green for active investments
+                : (index === 0 ? '#FF5959' : 'transparent'), // Red only for first bar when inactive
+              opacity: hasActiveInvestments 
+                ? 1 // Full opacity for all bars when active
+                : (index === 0 ? 1 : 0) // Only show first bar when inactive
+            }}
+          />
+        ))}
+        
+        {/* Tooltip - Hidden on mobile, visible on hover for larger screens */}
+        <div className="absolute invisible sm:group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -mt-8 whitespace-nowrap">
+          {activeInvestments > 0 
+            ? `${activeInvestments} Active Investment${activeInvestments > 1 ? 's' : ''}`
+            : 'No Active Investments'}
         </div>
       </div>
     );
@@ -139,7 +137,7 @@ export default function Header({
         </svg>
       </button>
       <div className="flex items-center space-x-2 sm:space-x-6 md:space-x-10">
-        {/* Signal Bars - Add this before the bell icon */}
+        {/* Signal Bars - Now visible on mobile */}
         <div className="group relative cursor-help">
           {renderSignalBars()}
         </div>
