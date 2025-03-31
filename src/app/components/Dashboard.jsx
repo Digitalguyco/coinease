@@ -10,7 +10,7 @@ import axios from "axios";
 import { API_URL } from "../constants";
 // Use React.lazy to dynamically import the TradingViewWidget
 const TradingViewWidget = React.lazy(() => import("./Dashboard/TradingView"));
-const TradingChart = React.lazy(() => import("./Dashboard/TradingChart"));
+
 
 export default function Dashboard() {
   const { user, isAuthenticated, updateUserBalance } = useAuth();
@@ -50,7 +50,7 @@ export default function Dashboard() {
     if (user && user.id) {
         // console.log(user);
       // Initial balance setup from user data
-      if (portfolioValue === 0 && user.balance) {
+      if (user.balance) {
         const userBalance = parseFloat(user.balance);
         const previousValue = userBalance - (userBalance * 0.012); // 1.2% less for demonstration
         setPreviousBalance(previousValue);
@@ -153,9 +153,9 @@ export default function Dashboard() {
         setCryptoData(newCryptoData);
         
         // If we have user data, use their balance instead of the crypto calculation
-        if (!user || !user.balance) {
-          setPortfolioValue(Math.round(totalValue));
-        }
+        // if (!user || !user.balance) {
+        //   setPortfolioValue(Math.round(totalValue));
+        // }
         
         setIsLoading(false);
       } catch (error) {
@@ -291,16 +291,7 @@ export default function Dashboard() {
               >
                 Overview
               </button>
-              <button
-                onClick={() => setActiveTab("signals")}
-                className={`py-2 px-4 font-medium text-sm ${
-                  activeTab === "signals"
-                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                Trading Signals
-              </button>
+             
             </div>
 
             {/* Overview Tab Content */}

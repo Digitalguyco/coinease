@@ -12,23 +12,23 @@ export default function Testimonials() {
       name: "Alejandro Nicolas",
       location: "Ingenieria, Argentina",
       image: "/user1.png",
-      title: "All your crypto in one place",
-      text: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled.",
+      title: "Reliable and fast Crypto Investment Platform",
+      text: "I am extremely impressed with Coinease and their Crypto Investment Platform. It's not easy to find a reliable and fast platform these days, but Coinease exceeds expectations. Their Gold Plan is perfect for experienced investors, while their Starter Plan is ideal for beginners looking to enter the world of crypto. Coinease is definitely legit and worth trying out.",
     },
     {
       name: "Alejandro Nicolas",
-      location: "Ingenieria, Argentina",
+      location: "New York, USA",
       image: "/user2.png",
       title: "All your crypto in one place",
-      text: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled.",
+      text: "I am so pleased with the experience I've had using Coinease. Their Crypto Investment Platform is top-notch - reliable, fast, and efficient. I started with their starter plan and upgraded to the gold plan. Coinease is legit and has helped me make smart investment choices. Highly recommend!"
     },
     // Add a third testimonial for better demonstration
     {
       name: "Maria Rodriguez",
       location: "Tech Solutions, Brazil",
-      image: "/user1.png", // Using existing image as placeholder
+      image: "/user3.jpg", // Using existing image as placeholder
       title: "Simplified my workflow",
-      text: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled.",
+      text: "I recently joined Coinease and I was impressed by their reliable and fast Crypto Investment Platform. Their gold plan is perfect for experienced investors, while the starter plan is great for beginners. Coinease is definitely legit and I highly recommend it to all!",
     },
   ];
 
