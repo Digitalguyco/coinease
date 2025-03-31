@@ -83,7 +83,7 @@ export default function Header({
 
     return (
       <div className="group relative cursor-help">
-        <div className="flex items-end h-6 gap-[2px] mx-4">
+        <div className={`flex items-end h-6 gap-[2px] mx-4 ${!hasActiveInvestments ? 'animate-pulse' : ''}`}>
           {[...Array(bars)].map((_, index) => (
             <div
               key={index}
