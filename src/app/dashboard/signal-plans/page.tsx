@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import Dashboard from "@/app/components/Dashboard";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
+import LoadingSpinner from "@/app/components/Dashboard/LoadingSpinner";
+import Drawer from "@/app/components/Dashboard/Drawer";
+import Header from "@/app/components/Dashboard/Header";
 
 interface SignalPlan {
   id: number;
@@ -149,11 +151,22 @@ export default function SignalPlansPage() {
     return (level / 4) * 100;
   };
 
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  const toggleDrawer = () => {
+    setIsDrawerOpen(!isDrawerOpen);
+  };
 
   return (
-    <Dashboard>
-      <div className="p-4 md:p-6 max-w-6xl mx-auto">
+    <Suspense fallback={<LoadingSpinner />}>
+      
+      
+      <div className="flex h-screen overflow-hidden">
+        {/* Drawer Navigation */}
+        <Drawer isOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
+      <div className="flex-1 flex flex-col w-full overflow-hidden">
+          <Header isOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
+          <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">Signal Plans</h1>
 
         {/* Current signal status */}
@@ -366,6 +379,8 @@ export default function SignalPlansPage() {
           }
         }} />
       </div>
-    </Dashboard>
+      </div>
+      </div>
+    </Suspense>
   );
 } 

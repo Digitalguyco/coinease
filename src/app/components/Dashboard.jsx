@@ -12,7 +12,7 @@ import { API_URL } from "../constants";
 const TradingViewWidget = React.lazy(() => import("./Dashboard/TradingView"));
 
 
-export default function Dashboard({ children }) {
+export default function Dashboard() {
   const { user, isAuthenticated, updateUserBalance } = useAuth();
   
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -267,11 +267,6 @@ export default function Dashboard({ children }) {
           <Header isOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
 
           <main className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-900">
-            {/* If children are provided, render them instead of the dashboard content */}
-            {children ? (
-              children
-            ) : (
-              <>
                 {/* Welcome message with user name */}
                 {isAuthenticated && (
                   <div className="mb-6">
@@ -806,8 +801,6 @@ export default function Dashboard({ children }) {
                     </div>
                   </>
                 )}
-              </>
-            )}
           </main>
         </div>
       </div>
