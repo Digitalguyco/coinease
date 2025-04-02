@@ -15,7 +15,7 @@ export default function Header({
   const bellRef = useRef<SVGSVGElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userAvatarRef = useRef<HTMLDivElement>(null);
-  const [activeInvestments, setActiveInvestments] = useState(0);
+  const [signalStrength, setSignalStrength] = useState(0);
   
   const { user, logout } = useAuth();
 
@@ -49,64 +49,72 @@ export default function Header({
     };
   }, []);
 
-  // Fetch active investments count
+  // Fetch signal strength from API
   useEffect(() => {
-    const fetchActiveInvestments = async () => {
+    const fetchSignalStrength = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await fetch('https://coinease.live/api/transactions/investments/', {
+        const response = await fetch('https://coinease.live/api/accounts/signal/strength/', {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch signal strength');
+        }
+        
         const data = await response.json();
-        // Count only active investments
-        const activeCount = data.filter((investment) => 
-          investment.status === 'active' || investment.status === 'ongoing'
-        ).length;
-        setActiveInvestments(activeCount);
+        // console.log(data);
+        setSignalStrength(data.signal_strength || 0); // Assuming the API returns an object with a strength property
       } catch (error) {
-        console.error('Error fetching investments:', error);
+        console.error('Error fetching signal strength:', error);
+        setSignalStrength(0); // Default to 0 on error
       }
     };
 
-    fetchActiveInvestments();
+    fetchSignalStrength();
     // Refresh every 5 minutes
-    const interval = setInterval(fetchActiveInvestments, 300000);
+    const interval = setInterval(fetchSignalStrength, 10000);
     return () => clearInterval(interval);
   }, []);
 
   // Signal bar renderer
   const renderSignalBars = () => {
     const bars = 4; // Total number of bars
-    const hasActiveInvestments = activeInvestments > 0;
+    const activeBarCount = signalStrength; // Convert percentage to bars (0-4)
+
+    const hasSignal = signalStrength > 0;
 
     return (
       <div className="group relative cursor-help">
-        <div className={`flex items-end h-6 gap-[2px] mx-4 ${!hasActiveInvestments ? 'animate-pulse' : ''}`}>
+        <div className={`flex items-end h-6 gap-[2px] mx-4 ${!hasSignal ? 'animate-pulse' : ''}`}>
           {[...Array(bars)].map((_, index) => (
             <div
               key={index}
-              className={`w-1 rounded-sm transition-all duration-300 ${
-                !hasActiveInvestments && index > 0 ? 'opacity-0' : ''
-              }`}
+              className={`w-1 rounded-sm transition-all duration-300`}
               style={{
                 height: `${((index + 1) / bars) * 24}px`,
-                backgroundColor: hasActiveInvestments 
-                  ? '#4CAF50' // Green for active investments
+                backgroundColor: hasSignal 
+                  ? (index < activeBarCount ? '#4CAF50' : 'rgba(74, 222, 128, 0.2)') // Green with varying opacity
                   : (index === 0 ? '#FF5959' : 'transparent'), // Red only for first bar when inactive
-                opacity: hasActiveInvestments 
-                  ? 1 // Full opacity for all bars when active
+                opacity: hasSignal 
+                  ? (index < activeBarCount ? 1 : 0.2) // Full opacity for active bars
                   : (index === 0 ? 1 : 0) // Only show first bar when inactive
               }}
             />
           ))}
           
-          {/* Tooltip */}
-          <div className="absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -mt-8 whitespace-nowrap">
-            {activeInvestments > 0 
-              ? `${activeInvestments} Active Investment${activeInvestments > 1 ? 's' : ''}`
-              : 'No Active Investments'}
+          {/* Tooltip with Signal Strength and Action */}
+          <div className="absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -mt-8 whitespace-nowrap z-30">
+            {signalStrength > 0 
+              ? `Signal Strength: ${signalStrength}%` 
+              : 'No Signal Plan Active'}
+            <div className="mt-1 text-xs text-center">
+              <Link href="/dashboard/signal-plans" className="text-blue-300 hover:text-blue-200 underline">
+                {signalStrength > 0 ? 'Upgrade Plan' : 'Get Signal Plan'}
+              </Link>
+            </div>
           </div>
         </div>
       </div>

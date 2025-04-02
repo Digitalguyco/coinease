@@ -161,9 +161,9 @@ const LoginContent = () => {
             ) : 'Login'}
           </button>
           
-          <div className="self-end mt-2 text-xs sm:text-sm text-[#5B46F6] hover:underline cursor-pointer">
+          {/* <div className="self-end mt-2 text-xs sm:text-sm text-[#5B46F6] hover:underline cursor-pointer">
             Forgot password?
-          </div>
+          </div> */}
         </form>
         
         <div className="flex flex-col gap-2 sm:gap-4 w-full max-w-[95%] sm:max-w-[90%] md:max-w-[70%] lg:max-w-[500px] px-4 sm:px-0">

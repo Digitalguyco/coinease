@@ -12,8 +12,6 @@ export default function Withdraw() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [withdrawMethod, setWithdrawMethod] = useState("saved"); // "saved" or "new"
-  const [selectedWallet, setSelectedWallet] = useState("");
   const [userBalance, setUserBalance] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [successData, setSuccessData] = useState(null);
@@ -36,27 +34,6 @@ export default function Withdraw() {
     "bitcoin-cash": "BCH",
     dash: "DASH"
   };
-
-  // Get user's default wallet from localStorage (if available)
-  const getUserWallet = () => {
-    var wallet_address = "";
-    var wallet_network = "";
-    try {
-      const userData = localStorage.getItem('userData' );
-      if (userData) {
-        const user = JSON.parse(userData);
-        wallet_address = user.wallet_address;
-        wallet_network = user.wallet_network;
-      }
-    } catch (error) {
-      console.error("Error parsing wallet from localStorage:", error);
-    }
-    return { address: wallet_address, network: wallet_network };
-  };
-
-  // Get user wallet
-  const defaultWallet = getUserWallet();
-  console.log(defaultWallet);
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -82,7 +59,6 @@ export default function Withdraw() {
     };
 
     fetchUserBalance();
-    console.log();
     
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -90,20 +66,6 @@ export default function Withdraw() {
 
     return () => clearTimeout(timer);
   }, []);
-
-  // Initialize form with default wallet if using saved method
-  useEffect(() => {
-    console.log(withdrawMethod, defaultWallet.address);
-    if (withdrawMethod === "saved" && defaultWallet.address) {
-      console.log('tss')
-      setFormData({
-        ...formData,
-        withdrawal_address: defaultWallet.address,
-        withdrawal_network: defaultWallet.network || "ethereum",
-        currency: networkToCurrency[defaultWallet.network || "ethereum"]
-      });
-    }
-  }, [withdrawMethod]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -124,6 +86,23 @@ export default function Withdraw() {
     e.preventDefault();
     
     setErrorMessage("");
+    
+    // Validate all required fields
+    if (!formData.amount) {
+      setErrorMessage("Please enter an amount to withdraw");
+      return;
+    }
+    
+    if (!formData.withdrawal_address) {
+      setErrorMessage("Please enter a wallet address");
+      return;
+    }
+    
+    if (!formData.transactionPin) {
+      setErrorMessage("Please enter your transaction PIN");
+      return;
+    }
+    
     setIsSubmitting(true);
     
     // Validate amount against balance
@@ -177,7 +156,6 @@ export default function Withdraw() {
         walletLabel: "",
         transactionPin: ""
       });
-      setSelectedWallet("");
       
       // Update the user balance after successful withdrawal
       setUserBalance(prevBalance => prevBalance - parseFloat(formData.amount));
@@ -227,245 +205,141 @@ export default function Withdraw() {
               
               {/* Withdraw Card */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-                <div className="flex flex-col space-y-6">
-                  {/* Withdraw Method Toggle */}
-                  <div className="flex flex-col space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Withdraw Method
-                    </label>
-                    <div className="flex space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setWithdrawMethod("saved");
-                          // Reset form and pre-fill with default wallet
-                          if (defaultWallet.address) {
-                            setFormData({
-                              ...formData,
-                              withdrawal_address: defaultWallet.address,
-                              withdrawal_network: defaultWallet.network || "ethereum",
-                              currency: networkToCurrency[defaultWallet.network || "ethereum"]
-                            });
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                          withdrawMethod === "saved"
-                            ? "bg-[#5B46F6] text-white"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
-                        }`}
-                      >
-                        Default Wallet
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setWithdrawMethod("new");
-                          // Reset form fields for new wallet
-                          setFormData({
-                            ...formData,
-                            withdrawal_address: "",
-                            withdrawal_network: "ethereum",
-                            currency: "ETH",
-                            walletLabel: ""
-                          });
-                        }}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                          withdrawMethod === "new"
-                            ? "bg-[#5B46F6] text-white"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
-                        }`}
-                      >
-                        New Wallet
-                      </button>
+                <form onSubmit={handleSubmit} className="flex flex-col space-y-6">
+                  {/* Balance Display */}
+                  <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Available Balance</p>
+                      <p className="text-2xl font-bold">${userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                   </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Amount Field */}
-                    <div className="flex flex-col space-y-2">
-                      <label htmlFor="amount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Amount
-                      </label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                          $
-                        </span>
-                        <input
-                          type="number"
-                          name="amount"
-                          id="amount"
-                          value={formData.amount}
-                          onChange={handleChange}
-                          placeholder="0.00"
-                          className="w-full pl-8 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          required
-                          min="50"
-                          step="0.01"
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Available balance: ${userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-
-                    {withdrawMethod === "saved" ? (
-                      /* Default Wallet Display */
-                      <div className="flex flex-col space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Default Wallet
-                        </label>
-                        
-                        {defaultWallet.address ? (
-                          <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                            <p className="text-sm">
-                              <span className="font-medium">Network: </span>
-                              {defaultWallet.network || "ethereum"}
-                            </p>
-                            <p className="text-sm break-all">
-                              <span className="font-medium">Address: </span>
-                              {defaultWallet.address}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="mt-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-800 dark:text-yellow-200">
-                            <p className="text-sm">
-                              No default wallet found. Please use the "New Wallet" option.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      /* New Wallet Form */
-                      <>
-                        <div className="flex flex-col space-y-2">
-                          <label htmlFor="walletLabel" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Wallet Label (for your reference only)
-                          </label>
-                          <input
-                            type="text"
-                            name="walletLabel"
-                            id="walletLabel"
-                            value={formData.walletLabel}
-                            onChange={handleChange}
-                            placeholder="e.g. My Ethereum Wallet"
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          />
-                        </div>
-                        
-                        <div className="flex flex-col space-y-2">
-                          <label htmlFor="withdrawal_network" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Select Network
-                          </label>
-                          <select
-                            name="withdrawal_network"
-                            id="withdrawal_network"
-                            value={formData.withdrawal_network}
-                            onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            required
-                          >
-                            <option value="ethereum">Ethereum (ETH)</option>
-                            <option value="bitcoin">Bitcoin (BTC)</option>
-                            <option value="litecoin">Litecoin (LTC)</option>
-                            <option value="ripple">Ripple (XRP)</option>
-                            <option value="bitcoin-cash">Bitcoin Cash (BCH)</option>
-                            <option value="dash">Dash (DASH)</option>
-                          </select>
-                        </div>
-                        
-                        <div className="flex flex-col space-y-2">
-                          <label htmlFor="withdrawal_address" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Wallet Address
-                          </label>
-                          <input
-                            type="text"
-                            name="withdrawal_address"
-                            id="withdrawal_address"
-                            value={formData.withdrawal_address}
-                            onChange={handleChange}
-                            placeholder="Enter wallet address"
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            required
-                          />
-                        </div>
-                      </>
-                    )}
-                    
-                    {/* Transaction PIN */}
-                    <div className="flex flex-col space-y-2">
-                      <label htmlFor="transactionPin" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Transaction PIN
-                      </label>
+                  
+                  {/* Amount */}
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="amount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Withdrawal Amount
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">$</span>
                       <input
-                        type="password"
-                        name="transactionPin"
-                        id="transactionPin"
-                        value={formData.transactionPin}
+                        type="number"
+                        name="amount"
+                        id="amount"
+                        step="0.01"
+                        min="10"
+                        value={formData.amount}
                         onChange={handleChange}
-                        placeholder="Enter your transaction PIN"
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="0.00"
+                        className="w-full pl-8 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         required
                       />
                     </div>
-                    
-                    {/* Withdraw Button */}
-                    <button
-                      type="submit"
-                      className="w-full py-3 px-4 bg-[#5B46F6] text-white font-medium rounded-lg hover:bg-[#5B46F6]/90 transition-all duration-200"
-                      disabled={isSubmitting || !formData.withdrawal_address}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Minimum withdrawal: $10.00</p>
+                  </div>
+                  
+                  {/* Network Selection */}
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="withdrawal_network" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Withdrawal Network
+                    </label>
+                    <select
+                      name="withdrawal_network"
+                      id="withdrawal_network"
+                      value={formData.withdrawal_network}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
                     >
-                      {isSubmitting ? (
-                        <span className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        "Withdraw Funds"
-                      )}
-                    </button>
-                  </form>
-                </div>
+                      <option value="ethereum">Ethereum (ETH)</option>
+                      <option value="bitcoin">Bitcoin (BTC)</option>
+                      <option value="litecoin">Litecoin (LTC)</option>
+                      <option value="ripple">Ripple (XRP)</option>
+                      <option value="bitcoin-cash">Bitcoin Cash (BCH)</option>
+                      <option value="dash">Dash (DASH)</option>
+                    </select>
+                  </div>
+                  
+                  {/* Wallet Label */}
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="walletLabel" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Wallet Label (optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="walletLabel"
+                      id="walletLabel"
+                      value={formData.walletLabel}
+                      onChange={handleChange}
+                      placeholder="e.g. My Ethereum Wallet"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  
+                  {/* Wallet Address */}
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="withdrawal_address" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Wallet Address
+                    </label>
+                    <input
+                      type="text"
+                      name="withdrawal_address"
+                      id="withdrawal_address"
+                      value={formData.withdrawal_address}
+                      onChange={handleChange}
+                      placeholder="Enter wallet address"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                      Please double-check your wallet address before submission.
+                    </p>
+                  </div>
+                  
+                  {/* Transaction PIN */}
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="transactionPin" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Transaction PIN
+                    </label>
+                    <input
+                      type="password"
+                      name="transactionPin"
+                      id="transactionPin"
+                      value={formData.transactionPin}
+                      onChange={handleChange}
+                      placeholder="Enter your transaction PIN"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                  
+                  {/* Withdraw Button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full py-3 px-4 rounded-lg font-medium text-white ${
+                      isSubmitting
+                        ? "bg-indigo-400 cursor-not-allowed"
+                        : "bg-[#5B46F6] hover:bg-indigo-700"
+                    }`}
+                  >
+                    {isSubmitting ? "Processing..." : "Withdraw Funds"}
+                  </button>
+                  
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                    By proceeding, you agree to our withdrawal terms and conditions.
+                  </p>
+                </form>
               </div>
               
-              {/* Withdrawal Information */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                <h2 className="text-lg font-semibold mb-4">Withdrawal Information</h2>
-                <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-5 h-5 text-[#5B46F6] mr-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    Withdrawals are processed within 24 hours.
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-5 h-5 text-[#5B46F6] mr-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    Minimum withdrawal amount: $50.
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-5 h-5 text-[#5B46F6] mr-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    Ensure your wallet address is correct before submitting. We cannot recover funds sent to incorrect addresses.
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-5 h-5 text-[#5B46F6] mr-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    Network fees will be deducted from your withdrawal amount.
-                  </li>
+              {/* Info Card */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-md">
+                <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400 mb-2">Important Information</h3>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                  <li>Withdrawals are processed within 24 hours.</li>
+                  <li>Always double-check your wallet address before submitting.</li>
+                  <li>Make sure you're using the correct network for your wallet.</li>
+                  <li>Minimum withdrawal amount is $10.00.</li>
+                  <li>A small network fee may apply to your withdrawal.</li>
                 </ul>
               </div>
             </div>
@@ -475,33 +349,40 @@ export default function Withdraw() {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full mx-4">
-            <div className="flex flex-col items-center text-center">
-              {/* Success Checkmark Icon */}
-              <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-600 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Withdrawal Successful!</h3>
-              {successData && (
-                <p className="text-gray-600 dark:text-gray-400 mb-2">
-                  You have successfully withdrawn {successData.amount} {successData.currency} to {successData.address.substring(0, 10)}...{successData.address.substring(successData.address.length - 6)}.
-                </p>
-              )}
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Your withdrawal has been processed and the funds have been sent to your wallet.
-              </p>
-              <button
-                onClick={closeModal}
-                className="w-full py-2 px-4 bg-[#5B46F6] text-white font-medium rounded-lg hover:bg-[#5B46F6]/90 transition-all duration-200"
-              >
-                Close
-              </button>
             </div>
+            <h3 className="text-xl font-bold text-center mb-2">Withdrawal Successful</h3>
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-4">
+              Your withdrawal request has been submitted successfully.
+            </p>
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500 dark:text-gray-400">Amount</span>
+                <span className="font-medium">${successData?.amount} {successData?.currency}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">To Address</span>
+                <span className="font-medium text-xs truncate max-w-[200px]">{successData?.address}</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+              Please allow up to 24 hours for the transaction to be processed.
+            </p>
+            <button
+              onClick={closeModal}
+              className="w-full py-2 px-4 bg-[#5B46F6] hover:bg-indigo-700 text-white rounded-lg font-medium"
+            >
+              Close
+            </button>
           </div>
-    </div>
+        </div>
       )}
     </Suspense>
   );

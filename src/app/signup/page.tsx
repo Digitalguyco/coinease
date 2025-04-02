@@ -19,8 +19,6 @@ export default function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
-    networkChain: "ethereum",
-    walletAddress: "",
     referralCode: "",
     transactionPin: "",
     confirmTransactionPin: ""
@@ -32,12 +30,11 @@ export default function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
-    walletAddress: "",
     transactionPin: "",
     confirmTransactionPin: ""
   });
 
-  const totalSteps = 5; // Total number of pages
+  const totalSteps = 4; // Total number of pages (reduced by 1)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
@@ -92,17 +89,9 @@ export default function Signup() {
         }
         break;
         
-      case 3:
-        // Validate wallet address
-        if (!formData.walletAddress.trim()) {
-          newErrors.walletAddress = "Wallet address is required";
-          isValid = false;
-        }
-        break;
-        
-      case 5:
-        // Validate transaction PIN
-        if (!formData.transactionPin) {
+      case 4:
+        // Validate transaction PIN (shifted from Step 4 to Step 3)
+        if (!formData.transactionPin.trim()) {
           newErrors.transactionPin = "Transaction PIN is required";
           isValid = false;
         } else if (formData.transactionPin.length !== 4 || !/^\d+$/.test(formData.transactionPin)) {
@@ -110,7 +99,7 @@ export default function Signup() {
           isValid = false;
         }
         
-        if (!formData.confirmTransactionPin) {
+        if (!formData.confirmTransactionPin.trim()) {
           newErrors.confirmTransactionPin = "Please confirm your transaction PIN";
           isValid = false;
         } else if (formData.transactionPin !== formData.confirmTransactionPin) {
@@ -126,6 +115,7 @@ export default function Signup() {
 
   const handleNextStep = () => {
     if (validateStep(currentStep) && currentStep < totalSteps) {
+      console.log(currentStep);
       setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0); // Scroll to top when changing steps
       setError(""); // Clear any previous errors
@@ -153,7 +143,6 @@ export default function Signup() {
       full_name: formData.fullName,
       email: formData.email,
       password: formData.password,
-      wallet_address: formData.walletAddress,
       referral_code: formData.referralCode || undefined, // Only send if provided
       transaction_pin: formData.transactionPin
     };
@@ -348,49 +337,9 @@ export default function Signup() {
             </>
           )}
 
-          {/* Step 3: Wallet Information */}
+          
+          {/* Step 3: Referral Code */}
           {currentStep === 3 && (
-            <>
-              <label htmlFor="networkChain" className="text-sm sm:text-base md:text-lg font-bold font-inter">
-                Select your smart network chain
-              </label>
-              <select
-                id="networkChain"
-                value={formData.networkChain}
-                onChange={handleChange}
-                className="p-3 sm:p-4 md:p-6 text-sm sm:text-base rounded-md border-2 border-gray-300"
-                required
-              >
-                <option value="ethereum">Ethereum</option>
-                <option value="bitcoin">Bitcoin</option>
-                <option value="litecoin">Litecoin</option>
-                <option value="ripple">Ripple</option>
-                <option value="bitcoin-cash">Bitcoin Cash</option>
-                <option value="dash">Dash</option>
-              </select>
-              
-              <label htmlFor="walletAddress" className="text-sm sm:text-base md:text-lg font-bold font-inter">
-                Wallet Address
-              </label>
-              <input
-                type="text"
-                id="walletAddress"
-                value={formData.walletAddress}
-                onChange={handleChange}
-                placeholder="Enter your wallet address"
-                className={`p-3 sm:p-4 md:p-6 text-sm sm:text-base rounded-md border-2 ${
-                  formErrors.walletAddress ? "border-red-500" : "border-gray-300"
-                }`}
-                required
-              />
-              {formErrors.walletAddress && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.walletAddress}</p>
-              )}
-            </>
-          )}
-
-          {/* Step 4: Referral Code */}
-          {currentStep === 4 && (
             <>
               <label htmlFor="referralCode" className="text-sm sm:text-base md:text-lg font-bold font-inter">
                 Referral Code (optional)
@@ -408,48 +357,38 @@ export default function Signup() {
             </>
           )}
 
-          {/* Step 5: Transaction PIN */}
-          {currentStep === 5 && (
+          {/* Step 4: Transaction PIN */}
+          {currentStep === 4 && (
             <>
               <label htmlFor="transactionPin" className="text-sm sm:text-base md:text-lg font-bold font-inter">
-                Transaction Pin
+                Transaction PIN
               </label>
               <input
                 type="password"
                 id="transactionPin"
                 value={formData.transactionPin}
-                onChange={handleChange}
-                placeholder="Enter your transaction pin (4 digits)"
                 maxLength={4}
-                className={`p-3 sm:p-4 md:p-6 text-sm sm:text-base rounded-md border-2 ${
-                  formErrors.transactionPin ? "border-red-500" : "border-gray-300"
-                }`}
-                required
+                onChange={handleChange}
+                placeholder="Enter your transaction PIN"
+                className="p-3 sm:p-4 md:p-6 text-sm sm:text-base rounded-md border-2 border-gray-300"
               />
-              {formErrors.transactionPin && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.transactionPin}</p>
-              )}
-              
               <label htmlFor="confirmTransactionPin" className="text-sm sm:text-base md:text-lg font-bold font-inter">
-                Confirm Transaction Pin
+                Confirm Transaction PIN
               </label>
               <input
                 type="password"
                 id="confirmTransactionPin"
                 value={formData.confirmTransactionPin}
-                onChange={handleChange}
-                placeholder="Confirm your transaction pin"
                 maxLength={4}
-                className={`p-3 sm:p-4 md:p-6 text-sm sm:text-base rounded-md border-2 ${
-                  formErrors.confirmTransactionPin ? "border-red-500" : "border-gray-300"
-                }`}
-                required
+                onChange={handleChange}
+                placeholder="Confirm your transaction PIN"
+                className="p-3 sm:p-4 md:p-6 text-sm sm:text-base rounded-md border-2 border-gray-300"
               />
-              {formErrors.confirmTransactionPin && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.confirmTransactionPin}</p>
-              )}
             </>
+
           )}
+          
+
 
           {/* Navigation buttons */}
           <div className="flex justify-between mt-4 sm:mt-6">

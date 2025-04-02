@@ -28,10 +28,41 @@ const InvestmentContent = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState(null);
+  const [signalStrength, setSignalStrength] = useState(0);
+  const [signalLoading, setSignalLoading] = useState(true);
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
+
+  // Fetch signal strength from API
+  useEffect(() => {
+    const fetchSignalStrength = async () => {
+      try {
+        setSignalLoading(true);
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch('https://coinease.live/api/accounts/signal/strength/', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch signal strength');
+        }
+        
+        const data = await response.json();
+        setSignalStrength(data.signal_strength || 0);
+      } catch (error) {
+        console.error('Error fetching signal strength:', error);
+        setSignalStrength(0);
+      } finally {
+        setSignalLoading(false);
+      }
+    };
+
+    fetchSignalStrength();
+  }, []);
 
   // Fetch user balance
   useEffect(() => {
@@ -129,9 +160,31 @@ const InvestmentContent = () => {
     };
   };
 
-  const handleInvestClick = () => {
+ 
+
+  // Check if signal strength is sufficient (at least 3 bars or 75%)
+  const hasEnoughSignal = () => {
+    return signalStrength >= 3;
+  };
+
+  // Generate signal strength message based on current level
+  const getSignalMessage = () => {
+    const bars = signalStrength;
+    if (bars === 0) return "You have no active signal plan. Please purchase a signal plan to invest.";
+    if (bars < 3) return "Your signal strength is too low. You need at least 3 bars of signal strength to create investments.";
+    return null;
+  };
+
+  const handleInvestClick = (e) => {
+    e.preventDefault();
     if (!selectedPlan) {
       setErrorMessage("Please select an investment plan");
+      return;
+    }
+
+    // Check signal strength first
+    if (!hasEnoughSignal()) {
+      setErrorMessage("Your signal strength is too low. You need at least 3 bars of signal strength to invest.");
       return;
     }
 
@@ -246,6 +299,50 @@ const InvestmentContent = () => {
                 My Investments
               </Link>
             </div>
+            
+            {/* Signal Strength Warning */}
+            {!signalLoading && !hasEnoughSignal() && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-4 mb-6 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                      {getSignalMessage()}
+                    </p>
+                    <div className="mt-2">
+                      <Link
+                        href="/dashboard/signal-plans"
+                        className="text-sm font-medium text-yellow-700 dark:text-yellow-200 underline hover:text-yellow-600 dark:hover:text-yellow-100"
+                      >
+                        Upgrade your signal plan
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Signal Strength Indicator */}
+                <div className="mt-3">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-200 mb-1">
+                    Current Signal Strength: {signalStrength}%
+                  </p>
+                  <div className="flex items-center h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${signalStrength >= 3 ? 'bg-green-500' : signalStrength >= 2 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      style={{ width: `${signalStrength}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-yellow-700 dark:text-yellow-200">0%</span>
+                    <span className="text-xs text-yellow-700 dark:text-yellow-200">50%</span>
+                    <span className="text-xs text-yellow-700 dark:text-yellow-200">100%</span>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Error Message */}
             {errorMessage && (
@@ -446,14 +543,19 @@ const InvestmentContent = () => {
                     </div>
                   )}
                   
-                  {/* Invest Button */}
+                  {/* Submit Button */}
                   <button
-                    type="button"
                     onClick={handleInvestClick}
-                    className="w-full py-3 px-4 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-all duration-200"
-                    disabled={!amount || parseFloat(amount) <= 0}
+                    disabled={!selectedPlan || isSubmitting || !hasEnoughSignal()}
+                    className={`w-full mt-4 py-3 rounded-lg font-medium ${
+                      !selectedPlan || !hasEnoughSignal()
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        : isSubmitting
+                          ? 'bg-indigo-400 text-white cursor-wait'
+                          : 'bg-[#5B46F6] text-white hover:bg-[#4A38DC] transition-colors'
+                    }`}
                   >
-                    Invest Now
+                    {isSubmitting ? 'Processing...' : hasEnoughSignal() ? 'Invest Now' : 'Insufficient Signal Strength'}
                   </button>
                 </form>
               </div>
